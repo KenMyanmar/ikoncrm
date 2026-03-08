@@ -92,7 +92,9 @@ Deno.serve(async (req) => {
 
       case "send_reset_email": {
         if (!email) throw new Error("Missing email");
-        const { error } = await adminClient.auth.resetPasswordForEmail(email);
+        const { error } = await adminClient.auth.resetPasswordForEmail(email, {
+          redirectTo: "https://ikoncrm.lovable.app/reset-password",
+        });
         if (error) throw error;
         result = { success: true, message: "Password reset email sent" };
         break;

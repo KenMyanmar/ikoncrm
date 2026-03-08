@@ -158,7 +158,7 @@ Deno.serve(async (req) => {
 
     // Send invite email so they can set their own password
     const { error: inviteError } = await adminClient.auth.resetPasswordForEmail(email, {
-      redirectTo: `${Deno.env.get("SUPABASE_URL")?.replace('.supabase.co', '.supabase.co')}`,
+      redirectTo: "https://ikoncrm.lovable.app/reset-password",
     });
     if (inviteError) {
       console.warn("Password reset email failed:", inviteError.message);

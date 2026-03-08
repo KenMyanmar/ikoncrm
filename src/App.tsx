@@ -25,6 +25,7 @@ import Reports from "@/pages/Reports";
 import ActivityLog from "@/pages/ActivityLog";
 import SettingsPage from "@/pages/Settings";
 import MyDeliveries from "@/pages/MyDeliveries";
+import ResetPassword from "@/pages/ResetPassword";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -38,6 +39,7 @@ const App = () => (
         <StaffProvider>
           <Routes>
             <Route path="/login" element={<Login />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
               <Route index element={<Dashboard />} />
               <Route path="products" element={<ProtectedRoute module="products"><ProductList /></ProtectedRoute>} />
