@@ -14,6 +14,7 @@ import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { Save, ArrowRight, ArrowLeft } from "lucide-react";
+import { ImageUpload } from "@/components/ui/ImageUpload";
 
 export default function ProductEdit() {
   const { id } = useParams<{ id: string }>();

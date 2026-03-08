@@ -334,7 +334,7 @@ export default function Promotions() {
               <div><Label>End Date</Label><Input type="datetime-local" value={form.end_date} onChange={e => setForm(f => ({ ...f, end_date: e.target.value }))} /></div>
             </div>
             <div><Label>Usage Limit (0 = unlimited)</Label><Input type="number" value={form.usage_limit} onChange={e => setForm(f => ({ ...f, usage_limit: +e.target.value }))} /></div>
-            <div><Label>Banner Image URL</Label><Input value={form.banner_image_url} onChange={e => setForm(f => ({ ...f, banner_image_url: e.target.value }))} placeholder="https://..." /></div>
+            <div><Label>Banner Image</Label><ImageUpload bucket="banners" folder="promotions" value={form.banner_image_url || ""} onChange={url => setForm(f => ({ ...f, banner_image_url: url }))} aspectHint="1200×400px" /></div>
             <div className="flex items-center gap-2"><Switch checked={form.is_active} onCheckedChange={v => setForm(f => ({ ...f, is_active: v }))} /><Label>Active</Label></div>
           </div>
           <DialogFooter>

@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { Plus, Edit } from "lucide-react";
+import { ImageUpload } from "@/components/ui/ImageUpload";
 
 export default function BannerList() {
   const queryClient = useQueryClient();
