@@ -110,12 +110,14 @@ export function StaffProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const fetchStaffProfile = (userId: string) => {
-    supabase
-      .from("staff_profiles")
-      .select("*")
-      .eq("user_id", userId)
-      .eq("is_active", true)
-      .maybeSingle()
+    Promise.resolve(
+      supabase
+        .from("staff_profiles")
+        .select("*")
+        .eq("user_id", userId)
+        .eq("is_active", true)
+        .maybeSingle()
+    )
       .then(({ data, error }) => {
         if (error) console.error("Staff profile fetch error:", error);
         setStaff(data as StaffProfile | null);
