@@ -85,6 +85,10 @@ export default function SettingsPage() {
   };
 
   const handleChangePassword = async () => {
+    if (!currentPassword) {
+      toast({ title: "Current password required", variant: "destructive" });
+      return;
+    }
     if (newPassword.length < 8) {
       toast({ title: "Password too short", description: "Minimum 8 characters.", variant: "destructive" });
       return;
@@ -94,12 +98,26 @@ export default function SettingsPage() {
       return;
     }
     setSavingPassword(true);
+
+    // Re-authenticate with current password first
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: staff?.email ?? "",
+      password: currentPassword,
+    });
+
+    if (signInError) {
+      setSavingPassword(false);
+      toast({ title: "Current password is incorrect", description: "Please enter your current password correctly.", variant: "destructive" });
+      return;
+    }
+
     const { error } = await supabase.auth.updateUser({ password: newPassword });
     setSavingPassword(false);
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
       toast({ title: "Password changed successfully" });
+      setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
     }
