@@ -1,26 +1,34 @@
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, useMemo } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { toast } from "sonner";
-import { Plus, Edit } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Plus, Search, Crown, Shield, Briefcase, Users, Truck, Eye } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+import InviteStaffDialog from "@/components/InviteStaffDialog";
+import StaffDetailSheet from "@/components/StaffDetailSheet";
 
-const ROLES = ["super_admin", "admin", "manager", "staff", "delivery"];
+const ROLE_CONFIG: Record<string, { label: string; icon: React.ElementType; color: string }> = {
+  super_admin: { label: "Super Admin", icon: Crown, color: "bg-accent/10 text-accent border-accent/20" },
+  admin: { label: "Admin", icon: Shield, color: "bg-primary/10 text-primary border-primary/20" },
+  manager: { label: "Manager", icon: Briefcase, color: "bg-info/10 text-info border-info/20" },
+  staff: { label: "Staff", icon: Users, color: "bg-success/10 text-success border-success/20" },
+  delivery: { label: "Delivery", icon: Truck, color: "bg-warning/10 text-warning border-warning/20" },
+};
 
 export default function StaffManagement() {
   const queryClient = useQueryClient();
-  const [editing, setEditing] = useState<any>(null);
-  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [roleFilter, setRoleFilter] = useState("all");
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [selectedStaff, setSelectedStaff] = useState<any>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
-  const { data: staffList } = useQuery({
+  const { data: staffList, isLoading } = useQuery({
     queryKey: ["admin-staff"],
     queryFn: async () => {
       const { data } = await supabase.from("staff_profiles").select("*").order("created_at");
@@ -28,85 +36,217 @@ export default function StaffManagement() {
     },
   });
 
-  const saveMutation = useMutation({
-    mutationFn: async (s: any) => {
-      if (s.id) {
-        const { error } = await supabase.from("staff_profiles").update({
-          full_name: s.full_name, role: s.role, department: s.department, is_active: s.is_active,
-        } as any).eq("id", s.id);
-        if (error) throw error;
-      }
-    },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["admin-staff"] }); setOpen(false); toast.success("Staff updated"); },
-    onError: (e: any) => toast.error(e.message),
-  });
+  const filtered = useMemo(() => {
+    if (!staffList) return [];
+    return staffList.filter((s: any) => {
+      const matchesSearch =
+        !search ||
+        s.full_name?.toLowerCase().includes(search.toLowerCase()) ||
+        s.email?.toLowerCase().includes(search.toLowerCase());
+      const matchesRole = roleFilter === "all" || s.role === roleFilter;
+      return matchesSearch && matchesRole;
+    });
+  }, [staffList, search, roleFilter]);
 
-  const roleColor: Record<string, string> = {
-    super_admin: "bg-accent/10 text-accent",
-    admin: "bg-primary/10 text-primary",
-    sales_manager: "bg-info/10 text-info",
-    sales_rep: "bg-info/10 text-info",
-    catalog_manager: "bg-success/10 text-success",
-    viewer: "bg-muted text-muted-foreground",
-  };
+  // Stats
+  const stats = useMemo(() => {
+    if (!staffList) return { total: 0, active: 0, inactive: 0, byRole: {} as Record<string, number> };
+    const byRole: Record<string, number> = {};
+    let active = 0;
+    staffList.forEach((s: any) => {
+      byRole[s.role] = (byRole[s.role] || 0) + 1;
+      if (s.is_active) active++;
+    });
+    return { total: staffList.length, active, inactive: staffList.length - active, byRole };
+  }, [staffList]);
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-foreground">Staff Management</h1>
-        <p className="text-sm text-muted-foreground">Invite staff via Supabase Auth, then add them here.</p>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Staff Management</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Manage your team members, roles, and permissions
+          </p>
+        </div>
+        <Button onClick={() => setInviteOpen(true)} className="gap-2">
+          <Plus className="h-4 w-4" /> Invite Staff
+        </Button>
       </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="pt-4 pb-3 px-4">
+            <p className="text-xs text-muted-foreground font-medium">Total Staff</p>
+            <p className="text-2xl font-bold text-foreground">{stats.total}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4 pb-3 px-4">
+            <p className="text-xs text-muted-foreground font-medium">Active</p>
+            <p className="text-2xl font-bold text-success">{stats.active}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4 pb-3 px-4">
+            <p className="text-xs text-muted-foreground font-medium">Inactive</p>
+            <p className="text-2xl font-bold text-destructive">{stats.inactive}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4 pb-3 px-4">
+            <p className="text-xs text-muted-foreground font-medium">Roles</p>
+            <div className="flex flex-wrap gap-1 mt-1">
+              {Object.entries(stats.byRole).map(([role, count]) => {
+                const rc = ROLE_CONFIG[role];
+                return rc ? (
+                  <Badge key={role} variant="outline" className={`text-[9px] ${rc.color}`}>
+                    {count} {rc.label}
+                  </Badge>
+                ) : null;
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Search + Filter */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search by name or email..."
+            className="pl-9"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <Tabs value={roleFilter} onValueChange={setRoleFilter}>
+          <TabsList className="h-10">
+            <TabsTrigger value="all" className="text-xs">All</TabsTrigger>
+            {Object.entries(ROLE_CONFIG).map(([key, rc]) => {
+              const Icon = rc.icon;
+              return (
+                <TabsTrigger key={key} value={key} className="text-xs gap-1">
+                  <Icon className="h-3 w-3" /> {rc.label}
+                </TabsTrigger>
+              );
+            })}
+          </TabsList>
+        </Tabs>
+      </div>
+
+      {/* Table */}
       <Card>
-        <CardContent className="pt-4">
+        <CardContent className="pt-0 px-0">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
+                <TableHead>Staff Member</TableHead>
                 <TableHead>Role</TableHead>
-                <TableHead>Department</TableHead>
-                <TableHead>Active</TableHead>
-                <TableHead>Last Login</TableHead>
+                <TableHead className="hidden md:table-cell">Department</TableHead>
+                <TableHead className="hidden md:table-cell">Status</TableHead>
+                <TableHead className="hidden lg:table-cell">Last Login</TableHead>
                 <TableHead className="w-12" />
               </TableRow>
             </TableHeader>
             <TableBody>
-              {(staffList || []).map((s: any) => (
-                <TableRow key={s.id}>
-                  <TableCell className="font-medium">{s.full_name}</TableCell>
-                  <TableCell className="text-sm">{s.email}</TableCell>
-                  <TableCell><Badge className={`text-[10px] ${roleColor[s.role] || ""}`}>{s.role.replace("_", " ")}</Badge></TableCell>
-                  <TableCell className="text-sm">{s.department || "—"}</TableCell>
-                  <TableCell>{s.is_active ? "✓" : "—"}</TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{s.last_login_at ? new Date(s.last_login_at).toLocaleDateString() : "Never"}</TableCell>
-                  <TableCell><Button variant="ghost" size="sm" onClick={() => { setEditing(s); setOpen(true); }}><Edit className="h-4 w-4" /></Button></TableCell>
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                    Loading staff...
+                  </TableCell>
                 </TableRow>
-              ))}
+              ) : filtered.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                    No staff members found
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filtered.map((s: any) => {
+                  const rc = ROLE_CONFIG[s.role] || ROLE_CONFIG.staff;
+                  const Icon = rc.icon;
+                  const initials = (s.full_name || "?")
+                    .split(" ")
+                    .map((n: string) => n[0])
+                    .join("")
+                    .toUpperCase()
+                    .slice(0, 2);
+
+                  return (
+                    <TableRow
+                      key={s.id}
+                      className="cursor-pointer"
+                      onClick={() => {
+                        setSelectedStaff(s);
+                        setSheetOpen(true);
+                      }}
+                    >
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-bold shrink-0">
+                            {initials}
+                          </div>
+                          <div>
+                            <p className="font-medium text-sm">{s.full_name}</p>
+                            <p className="text-xs text-muted-foreground">{s.email}</p>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={`text-[10px] gap-1 ${rc.color}`}>
+                          <Icon className="h-3 w-3" />
+                          {rc.label}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
+                        {s.department || "—"}
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell">
+                        {s.is_active ? (
+                          <Badge variant="outline" className="text-[10px] bg-success/10 text-success border-success/20">
+                            Active
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-[10px] bg-destructive/10 text-destructive border-destructive/20">
+                            Inactive
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="hidden lg:table-cell text-xs text-muted-foreground">
+                        {s.last_login_at
+                          ? formatDistanceToNow(new Date(s.last_login_at), { addSuffix: true })
+                          : "Never"}
+                      </TableCell>
+                      <TableCell>
+                        <Button variant="ghost" size="sm">
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
             </TableBody>
           </Table>
         </CardContent>
       </Card>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Edit Staff</DialogTitle></DialogHeader>
-          {editing && (
-            <div className="space-y-4">
-              <div><Label>Full Name</Label><Input value={editing.full_name} onChange={e => setEditing({ ...editing, full_name: e.target.value })} /></div>
-              <div><Label>Email</Label><Input value={editing.email} disabled className="bg-muted" /></div>
-              <div>
-                <Label>Role</Label>
-                <Select value={editing.role} onValueChange={v => setEditing({ ...editing, role: v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{ROLES.map(r => <SelectItem key={r} value={r}>{r.replace("_", " ")}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-              <div><Label>Department</Label><Input value={editing.department || ""} onChange={e => setEditing({ ...editing, department: e.target.value })} /></div>
-              <div className="flex items-center gap-2"><Switch checked={editing.is_active} onCheckedChange={v => setEditing({ ...editing, is_active: v })} /><Label>Active</Label></div>
-              <Button className="w-full" onClick={() => saveMutation.mutate(editing)} disabled={saveMutation.isPending}>Save</Button>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+
+      {/* Dialogs */}
+      <InviteStaffDialog
+        open={inviteOpen}
+        onOpenChange={setInviteOpen}
+        onSuccess={() => queryClient.invalidateQueries({ queryKey: ["admin-staff"] })}
+      />
+
+      <StaffDetailSheet
+        staff={selectedStaff}
+        open={sheetOpen}
+        onOpenChange={setSheetOpen}
+      />
     </div>
   );
 }
