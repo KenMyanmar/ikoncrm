@@ -48,8 +48,13 @@ interface Props {
 
 export default function StaffDetailSheet({ staff, open, onOpenChange }: Props) {
   const queryClient = useQueryClient();
+  const { staff: currentStaff } = useStaff();
+  const isSuperAdmin = currentStaff?.role === "super_admin";
   const [editing, setEditing] = useState<StaffMember | null>(null);
   const [roleConfirm, setRoleConfirm] = useState<{ open: boolean; newRole: string }>({ open: false, newRole: "" });
+  const [resetPwOpen, setResetPwOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   // Sync editing state when staff changes
   if (staff && (!editing || editing.id !== staff.id)) {
