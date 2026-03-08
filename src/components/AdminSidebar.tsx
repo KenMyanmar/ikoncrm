@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
+import ikonLogo from "@/assets/ikon-logo.png";
 
 const navGroups = [
   {
