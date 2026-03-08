@@ -12,8 +12,8 @@ export async function logActivity(
     staff_id: staffId,
     action,
     entity_type: entityType,
-    entity_id: entityId,
-    entity_name: entityName,
-    details: details || {},
-  });
+    entity_id: entityId ?? undefined,
+    entity_name: entityName ?? undefined,
+    details: (details || {}) as any,
+  } as any);
 }
