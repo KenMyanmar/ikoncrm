@@ -215,8 +215,65 @@ export default function ProductEdit() {
           {/* Images */}
           <Card>
             <CardHeader><CardTitle className="text-sm">Images</CardTitle></CardHeader>
-            <CardContent>
-              <ImageUpload bucket="product-images" folder="thumbnails" value={form.thumbnail_url || ""} onChange={(url) => update("thumbnail_url", url)} aspectHint="Square 800×800px" />
+            <CardContent className="space-y-4">
+              <div>
+                <Label className="text-xs mb-1 block">Thumbnail</Label>
+                <ImageUpload bucket="product-images" folder="thumbnails" value={form.thumbnail_url || ""} onChange={(url) => update("thumbnail_url", url)} aspectHint="Square 800×800px" />
+              </div>
+              <div>
+                <Label className="text-xs mb-2 block">Gallery Images</Label>
+                {(() => {
+                  const images: string[] = Array.isArray(form.images) ? form.images : [];
+                  return (
+                    <>
+                      {images.length > 0 && (
+                        <div className="grid grid-cols-3 gap-2 mb-3">
+                          {images.map((url: string, idx: number) => (
+                            <div key={idx} className="relative group rounded-md overflow-hidden border border-border aspect-square bg-muted">
+                              <img src={url} alt={`Gallery ${idx + 1}`} className="w-full h-full object-cover" />
+                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    update("thumbnail_url", url);
+                                    toast.success("Set as thumbnail");
+                                  }}
+                                  className="p-1 rounded bg-background/80 hover:bg-background"
+                                  title="Set as thumbnail"
+                                >
+                                  <Star className="h-3.5 w-3.5 text-yellow-500" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const newImages = images.filter((_: string, i: number) => i !== idx);
+                                    update("images", newImages);
+                                  }}
+                                  className="p-1 rounded bg-background/80 hover:bg-background"
+                                  title="Remove"
+                                >
+                                  <X className="h-3.5 w-3.5 text-destructive" />
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <ImageUpload
+                        bucket="product-images"
+                        folder="gallery"
+                        value=""
+                        onChange={(url) => {
+                          const newImages = [...images, url];
+                          update("images", newImages);
+                          if (!form.thumbnail_url) update("thumbnail_url", url);
+                        }}
+                        aspectHint="Add gallery image"
+                      />
+                    </>
+                  );
+                })()}
+              </div>
             </CardContent>
           </Card>
 
