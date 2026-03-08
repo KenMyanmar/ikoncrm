@@ -110,6 +110,7 @@ export default function ProductEdit() {
           specifications: specsObj,
           datasheet_url: form.datasheet_url,
           thumbnail_url: form.thumbnail_url,
+          images: Array.isArray(form.images) ? form.images : [],
           is_featured: form.is_featured,
           is_active: form.is_active,
           tags: form.tags || [],
