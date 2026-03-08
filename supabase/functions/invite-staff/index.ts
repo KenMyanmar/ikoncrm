@@ -156,11 +156,13 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Send password reset so they can set their own password
-    await adminClient.auth.admin.generateLink({
-      type: "recovery",
-      email,
+    // Send invite email so they can set their own password
+    const { error: inviteError } = await adminClient.auth.resetPasswordForEmail(email, {
+      redirectTo: `${Deno.env.get("SUPABASE_URL")?.replace('.supabase.co', '.supabase.co')}`,
     });
+    if (inviteError) {
+      console.warn("Password reset email failed:", inviteError.message);
+    }
 
     return new Response(
       JSON.stringify({
