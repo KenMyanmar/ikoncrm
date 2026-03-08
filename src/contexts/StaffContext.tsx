@@ -110,45 +110,47 @@ export function StaffProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      const currentUser = session?.user ?? null;
-      setUser(currentUser);
-
-      if (currentUser) {
-        const { data } = await supabase
-          .from("staff_profiles")
-          .select("*")
-          .eq("user_id", currentUser.id)
-          .eq("is_active", true)
-          .maybeSingle();
-        setStaff(data as StaffProfile | null);
-      } else {
-        setStaff(null);
-      }
-      setLoading(false);
-    });
-
+    // Restore session first
     supabase.auth.getSession().then(({ data: { session } }) => {
       const currentUser = session?.user ?? null;
       setUser(currentUser);
       if (currentUser) {
-        supabase
-          .from("staff_profiles")
-          .select("*")
-          .eq("user_id", currentUser.id)
-          .eq("is_active", true)
-          .maybeSingle()
-          .then(({ data }) => {
-            setStaff(data as StaffProfile | null);
-            setLoading(false);
-          });
+        fetchStaffProfile(currentUser.id);
       } else {
         setLoading(false);
       }
     });
 
+    // Listen for subsequent changes — NO awaits inside callback
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        const currentUser = session?.user ?? null;
+        setUser(currentUser);
+        if (currentUser) {
+          // Fire and forget — don't await
+          fetchStaffProfile(currentUser.id);
+        } else {
+          setStaff(null);
+          setLoading(false);
+        }
+      }
+    );
+
     return () => subscription.unsubscribe();
   }, []);
+
+  const fetchStaffProfile = (userId: string) => {
+    supabase
+      .from("staff_profiles")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("is_active", true)
+      .maybeSingle()
+      .then(({ data }) => {
+        setStaff(data as StaffProfile | null);
+        setLoading(false);
+      });
+  };
 
   const signOut = async () => {
     await supabase.auth.signOut();
