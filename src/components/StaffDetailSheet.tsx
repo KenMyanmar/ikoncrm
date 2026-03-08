@@ -284,6 +284,104 @@ export default function StaffDetailSheet({ staff, open, onOpenChange }: Props) {
                 <p className="text-xs text-muted-foreground">No recent activity</p>
               )}
             </div>
+
+            {/* Super Admin Actions */}
+            {isSuperAdmin && staff && currentStaff?.id !== staff.id && (
+              <>
+                <Separator />
+                <div className="space-y-3">
+                  <h4 className="text-sm font-semibold flex items-center gap-1.5 text-foreground">
+                    <Shield className="h-4 w-4 text-muted-foreground" /> Admin Actions
+                  </h4>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-1.5"
+                      onClick={() => setResetPwOpen(true)}
+                    >
+                      <KeyRound className="h-3.5 w-3.5" />
+                      Reset Password
+                    </Button>
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-1.5"
+                      disabled={actionLoading === "signout"}
+                      onClick={async () => {
+                        setActionLoading("signout");
+                        try {
+                          const { data, error } = await supabase.functions.invoke("manage-staff", {
+                            body: { action: "force_signout", user_id: staff.user_id },
+                          });
+                          if (error) throw error;
+                          if (data?.error) throw new Error(data.error);
+                          toast.success("User signed out from all devices");
+                        } catch (e: any) {
+                          toast.error(e.message || "Failed to sign out user");
+                        } finally {
+                          setActionLoading(null);
+                        }
+                      }}
+                    >
+                      {actionLoading === "signout" ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <LogOut className="h-3.5 w-3.5" />
+                      )}
+                      Force Sign Out
+                    </Button>
+                  </div>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full gap-1.5"
+                    disabled={actionLoading === "suspend"}
+                    onClick={async () => {
+                      const action = editing?.is_active ? "suspend" : "unsuspend";
+                      setActionLoading("suspend");
+                      try {
+                        const { data, error } = await supabase.functions.invoke("manage-staff", {
+                          body: { action, user_id: staff.user_id, staff_id: staff.id },
+                        });
+                        if (error) throw error;
+                        if (data?.error) throw new Error(data.error);
+                        toast.success(action === "suspend" ? "Account suspended" : "Account reactivated");
+                        queryClient.invalidateQueries({ queryKey: ["admin-staff"] });
+                        onOpenChange(false);
+                      } catch (e: any) {
+                        toast.error(e.message || "Failed to update account status");
+                      } finally {
+                        setActionLoading(null);
+                      }
+                    }}
+                  >
+                    {actionLoading === "suspend" ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Ban className="h-3.5 w-3.5" />
+                    )}
+                    {editing?.is_active ? "Suspend Account" : "Reactivate Account"}
+                  </Button>
+
+                  <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 space-y-2">
+                    <p className="text-xs font-medium text-destructive">Danger Zone</p>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      className="w-full gap-1.5"
+                      onClick={() => setDeleteOpen(true)}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      Delete Account
+                    </Button>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </SheetContent>
       </Sheet>
@@ -291,11 +389,34 @@ export default function StaffDetailSheet({ staff, open, onOpenChange }: Props) {
       <RoleChangeConfirm
         open={roleConfirm.open}
         onOpenChange={(o) => setRoleConfirm({ ...roleConfirm, open: o })}
-        staffName={editing.full_name}
+        staffName={editing?.full_name || ""}
         currentRole={staff?.role || "staff"}
         newRole={roleConfirm.newRole}
         onConfirm={confirmRoleChange}
       />
+
+      {staff && (
+        <>
+          <ResetPasswordDialog
+            open={resetPwOpen}
+            onOpenChange={setResetPwOpen}
+            staffName={staff.full_name}
+            staffEmail={staff.email}
+            userId={staff.user_id}
+          />
+          <DeleteStaffDialog
+            open={deleteOpen}
+            onOpenChange={setDeleteOpen}
+            staffName={staff.full_name}
+            staffId={staff.id}
+            userId={staff.user_id}
+            onDeleted={() => {
+              queryClient.invalidateQueries({ queryKey: ["admin-staff"] });
+              onOpenChange(false);
+            }}
+          />
+        </>
+      )}
     </>
   );
 }
