@@ -241,6 +241,108 @@ export type Database = {
           },
         ]
       }
+      coupon_usage: {
+        Row: {
+          coupon_id: string
+          id: string
+          order_id: string | null
+          used_at: string | null
+          user_id: string
+        }
+        Insert: {
+          coupon_id: string
+          id?: string
+          order_id?: string | null
+          used_at?: string | null
+          user_id: string
+        }
+        Update: {
+          coupon_id?: string
+          id?: string
+          order_id?: string | null
+          used_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coupon_usage_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "coupons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coupon_usage_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coupons: {
+        Row: {
+          applies_to: string | null
+          code: string
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          discount_value: number
+          end_date: string
+          id: string
+          is_active: boolean | null
+          max_discount_amount: number | null
+          max_uses: number | null
+          max_uses_per_user: number | null
+          min_order_amount: number | null
+          start_date: string
+          target_ids: string[] | null
+          title: string
+          type: string
+          used_count: number | null
+        }
+        Insert: {
+          applies_to?: string | null
+          code: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          discount_value: number
+          end_date: string
+          id?: string
+          is_active?: boolean | null
+          max_discount_amount?: number | null
+          max_uses?: number | null
+          max_uses_per_user?: number | null
+          min_order_amount?: number | null
+          start_date: string
+          target_ids?: string[] | null
+          title: string
+          type?: string
+          used_count?: number | null
+        }
+        Update: {
+          applies_to?: string | null
+          code?: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          discount_value?: number
+          end_date?: string
+          id?: string
+          is_active?: boolean | null
+          max_discount_amount?: number | null
+          max_uses?: number | null
+          max_uses_per_user?: number | null
+          min_order_amount?: number | null
+          start_date?: string
+          target_ids?: string[] | null
+          title?: string
+          type?: string
+          used_count?: number | null
+        }
+        Relationships: []
+      }
       customer_addresses: {
         Row: {
           address_line: string
@@ -401,6 +503,75 @@ export type Database = {
             columns: ["order_id"]
             isOneToOne: false
             referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      flash_deals: {
+        Row: {
+          badge_text: string | null
+          created_at: string | null
+          created_by: string | null
+          discount_percentage: number | null
+          end_time: string
+          flash_price: number
+          id: string
+          is_active: boolean | null
+          original_price: number
+          product_id: string
+          sold_count: number | null
+          sort_order: number | null
+          start_time: string
+          stock_limit: number
+          title: string | null
+        }
+        Insert: {
+          badge_text?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          discount_percentage?: number | null
+          end_time: string
+          flash_price: number
+          id?: string
+          is_active?: boolean | null
+          original_price: number
+          product_id: string
+          sold_count?: number | null
+          sort_order?: number | null
+          start_time: string
+          stock_limit?: number
+          title?: string | null
+        }
+        Update: {
+          badge_text?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          discount_percentage?: number | null
+          end_time?: string
+          flash_price?: number
+          id?: string
+          is_active?: boolean | null
+          original_price?: number
+          product_id?: string
+          sold_count?: number | null
+          sort_order?: number | null
+          start_time?: string
+          stock_limit?: number
+          title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flash_deals_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flash_deals_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_public"
             referencedColumns: ["id"]
           },
         ]
@@ -838,6 +1009,78 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      promotions: {
+        Row: {
+          applies_to: string
+          banner_image_url: string | null
+          buy_quantity: number | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          discount_value: number | null
+          end_date: string
+          get_quantity: number | null
+          id: string
+          is_active: boolean | null
+          max_discount_amount: number | null
+          min_order_amount: number | null
+          priority: number | null
+          start_date: string
+          target_ids: string[] | null
+          title: string
+          type: string
+          updated_at: string | null
+          usage_count: number | null
+          usage_limit: number | null
+        }
+        Insert: {
+          applies_to?: string
+          banner_image_url?: string | null
+          buy_quantity?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          discount_value?: number | null
+          end_date: string
+          get_quantity?: number | null
+          id?: string
+          is_active?: boolean | null
+          max_discount_amount?: number | null
+          min_order_amount?: number | null
+          priority?: number | null
+          start_date: string
+          target_ids?: string[] | null
+          title: string
+          type?: string
+          updated_at?: string | null
+          usage_count?: number | null
+          usage_limit?: number | null
+        }
+        Update: {
+          applies_to?: string
+          banner_image_url?: string | null
+          buy_quantity?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          discount_value?: number | null
+          end_date?: string
+          get_quantity?: number | null
+          id?: string
+          is_active?: boolean | null
+          max_discount_amount?: number | null
+          min_order_amount?: number | null
+          priority?: number | null
+          start_date?: string
+          target_ids?: string[] | null
+          title?: string
+          type?: string
+          updated_at?: string | null
+          usage_count?: number | null
+          usage_limit?: number | null
+        }
+        Relationships: []
       }
       quotes: {
         Row: {
