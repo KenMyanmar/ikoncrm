@@ -303,21 +303,38 @@ export default function FlashDeals() {
           <div className="space-y-4">
             {!editId && (
               <div className="space-y-2">
-                <Label>Search Product</Label>
-                <Input placeholder="Search by name or code..." value={productSearch} onChange={e => setProductSearch(e.target.value)} />
-                {products.length > 0 && (
-                  <div className="max-h-40 overflow-y-auto border rounded-md divide-y">
-                    {products.map(p => (
-                      <button key={p.id} onClick={() => selectProduct(p)}
-                        className={`w-full text-left px-3 py-2 text-sm hover:bg-muted flex items-center gap-2 ${form.product_id === p.id ? "bg-primary/5 border-l-2 border-primary" : ""}`}>
-                        {p.thumbnail_url && <img src={p.thumbnail_url} className="h-8 w-8 rounded object-cover" alt="" />}
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate font-medium">{p.description}</p>
-                          <p className="text-xs text-muted-foreground">{p.stock_code} · {p.selling_price?.toLocaleString()} MMK</p>
-                        </div>
-                      </button>
-                    ))}
+                <Label>Product</Label>
+                {form.product_id ? (
+                  <div className="flex items-center gap-3 p-3 border rounded-md bg-muted/30">
+                    {products.find(p => p.id === form.product_id)?.thumbnail_url && (
+                      <img src={products.find(p => p.id === form.product_id)?.thumbnail_url!} className="h-10 w-10 rounded object-cover" alt="" />
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-sm truncate">{form.title}</p>
+                      <p className="text-xs text-muted-foreground">{form.original_price.toLocaleString()} MMK</p>
+                    </div>
+                    <Button type="button" variant="outline" size="sm" onClick={() => setForm(f => ({ ...f, product_id: "", title: "", original_price: 0 }))}>
+                      Change
+                    </Button>
                   </div>
+                ) : (
+                  <>
+                    <Input placeholder="Search by name or code..." value={productSearch} onChange={e => setProductSearch(e.target.value)} />
+                    {products.length > 0 && (
+                      <div className="max-h-40 overflow-y-auto border rounded-md divide-y">
+                        {products.map(p => (
+                          <button key={p.id} onClick={() => selectProduct(p)}
+                            className="w-full text-left px-3 py-2 text-sm hover:bg-muted flex items-center gap-2">
+                            {p.thumbnail_url && <img src={p.thumbnail_url} className="h-8 w-8 rounded object-cover" alt="" />}
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate font-medium">{p.description}</p>
+                              <p className="text-xs text-muted-foreground">{p.stock_code} · {p.selling_price?.toLocaleString()} MMK</p>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             )}
