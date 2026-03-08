@@ -10,10 +10,12 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { Crown, Shield, Briefcase, Users, Truck, Clock, Activity } from "lucide-react";
+import { Crown, Shield, Briefcase, Users, Truck, Clock, Activity, KeyRound, LogOut, Ban, Trash2, Loader2 } from "lucide-react";
 import RoleChangeConfirm from "./RoleChangeConfirm";
+import ResetPasswordDialog from "./ResetPasswordDialog";
+import DeleteStaffDialog from "./DeleteStaffDialog";
+import { useStaff } from "@/contexts/StaffContext";
 import { formatDistanceToNow } from "date-fns";
-
 const ROLES = ["super_admin", "admin", "manager", "staff", "delivery"];
 const DEPARTMENTS = ["Sales", "Operations", "Warehouse", "Logistics", "IT", "Finance"];
 
