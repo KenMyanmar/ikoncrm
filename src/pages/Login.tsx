@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { toast } from "sonner";
-import { ShieldCheck } from "lucide-react";
+import ikonLogo from "@/assets/ikon-logo.png";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -30,8 +30,8 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-primary p-4">
       <Card className="w-full max-w-md border-0 shadow-2xl">
         <CardHeader className="text-center pb-2 pt-8">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-xl bg-primary">
-            <ShieldCheck className="h-8 w-8 text-primary-foreground" />
+          <div className="mx-auto mb-4">
+            <img src={ikonLogo} alt="IKON Mart" className="h-16 w-auto mx-auto" />
           </div>
           <h1 className="text-2xl font-bold text-foreground tracking-tight">IKON MART</h1>
           <p className="text-xs font-semibold tracking-[0.3em] text-accent uppercase">CRM Admin</p>

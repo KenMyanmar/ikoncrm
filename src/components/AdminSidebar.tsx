@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
+import ikonLogo from "@/assets/ikon-logo.png";
 
 const navGroups = [
   {
@@ -79,9 +80,12 @@ export function AdminSidebar() {
     <Sidebar collapsible="icon" className="border-r-0">
       <SidebarContent>
         {!collapsed && (
-          <div className="px-4 py-5">
-            <h1 className="text-lg font-bold text-sidebar-foreground tracking-tight">IKON</h1>
-            <p className="text-[10px] font-semibold tracking-[0.25em] text-sidebar-primary uppercase">ADMIN</p>
+          <div className="px-4 py-5 flex items-center gap-3">
+            <img src={ikonLogo} alt="IKON Mart" className="h-10 w-auto" />
+            <div>
+              <h1 className="text-lg font-bold text-sidebar-foreground tracking-tight">IKON</h1>
+              <p className="text-[10px] font-semibold tracking-[0.25em] text-sidebar-primary uppercase">ADMIN</p>
+            </div>
           </div>
         )}
         {filteredGroups.map(group => (
