@@ -307,7 +307,7 @@ export default function FlashDeals() {
                 {form.product_id ? (
                   <div className="flex items-center gap-3 p-3 border rounded-md bg-muted/30">
                     {products.find(p => p.id === form.product_id)?.thumbnail_url && (
-                      <img src={products.find(p => p.id === form.product_id)?.thumbnail_url!} className="h-10 w-10 rounded object-cover" alt="" />
+                      <img src={products.find(p => p.id === form.product_id)?.thumbnail_url ?? ""} className="h-10 w-10 rounded object-cover" alt="" />
                     )}
                     <div className="min-w-0 flex-1">
                       <p className="font-medium text-sm truncate">{form.title}</p>
