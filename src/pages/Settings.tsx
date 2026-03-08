@@ -49,6 +49,7 @@ export default function SettingsPage() {
   const [savingProfile, setSavingProfile] = useState(false);
 
   // Password state
+  const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -84,6 +85,10 @@ export default function SettingsPage() {
   };
 
   const handleChangePassword = async () => {
+    if (!currentPassword) {
+      toast({ title: "Current password required", variant: "destructive" });
+      return;
+    }
     if (newPassword.length < 8) {
       toast({ title: "Password too short", description: "Minimum 8 characters.", variant: "destructive" });
       return;
@@ -93,12 +98,26 @@ export default function SettingsPage() {
       return;
     }
     setSavingPassword(true);
+
+    // Re-authenticate with current password first
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: staff?.email ?? "",
+      password: currentPassword,
+    });
+
+    if (signInError) {
+      setSavingPassword(false);
+      toast({ title: "Current password is incorrect", description: "Please enter your current password correctly.", variant: "destructive" });
+      return;
+    }
+
     const { error } = await supabase.auth.updateUser({ password: newPassword });
     setSavingPassword(false);
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
       toast({ title: "Password changed successfully" });
+      setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
     }
@@ -298,6 +317,16 @@ export default function SettingsPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4 max-w-sm">
+                    <div className="space-y-2">
+                      <Label htmlFor="current-pw">Current Password</Label>
+                      <Input
+                        id="current-pw"
+                        type={showPassword ? "text" : "password"}
+                        value={currentPassword}
+                        onChange={(e) => setCurrentPassword(e.target.value)}
+                        placeholder="Enter current password"
+                      />
+                    </div>
                     <div className="space-y-2">
                       <Label htmlFor="new-pw">New Password</Label>
                       <div className="relative">
