@@ -14,6 +14,7 @@ import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { Save, ArrowRight, ArrowLeft } from "lucide-react";
+import { ImageUpload } from "@/components/ui/ImageUpload";
 
 export default function ProductEdit() {
   const { id } = useParams<{ id: string }>();
@@ -114,12 +115,7 @@ export default function ProductEdit() {
           <Card>
             <CardHeader><CardTitle className="text-sm">Images</CardTitle></CardHeader>
             <CardContent>
-              {form.thumbnail_url ? (
-                <img src={form.thumbnail_url} className="rounded-lg w-full aspect-square object-cover" alt="" />
-              ) : (
-                <div className="rounded-lg w-full aspect-square bg-muted flex items-center justify-center text-muted-foreground text-sm">No image</div>
-              )}
-              <p className="text-xs text-muted-foreground mt-2">Image upload coming in next iteration.</p>
+              <ImageUpload bucket="product-images" folder="thumbnails" value={form.thumbnail_url || ""} onChange={url => update("thumbnail_url", url)} aspectHint="Square 800×800px" />
             </CardContent>
           </Card>
         </div>
