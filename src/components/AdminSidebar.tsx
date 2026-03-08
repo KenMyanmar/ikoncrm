@@ -44,7 +44,7 @@ const navGroups = [
   {
     label: "Delivery",
     items: [
-      { title: "My Deliveries", url: "/my-deliveries", icon: Truck, module: "delivery" },
+      { title: "Delivery Management", url: "/my-deliveries", icon: Truck, module: "delivery" },
     ],
   },
   {
