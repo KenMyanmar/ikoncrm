@@ -170,6 +170,7 @@ export default function FlashDeals() {
 
   const selectProduct = (p: Product) => {
     setForm(f => ({ ...f, product_id: p.id, original_price: p.selling_price || 0, title: p.description }));
+    setProductSearch("");
   };
 
   const soldPct = (d: FlashDeal) => d.stock_limit > 0 ? Math.round((d.sold_count / d.stock_limit) * 100) : 0;
