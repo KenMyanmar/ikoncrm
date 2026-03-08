@@ -26,6 +26,9 @@ import Reports from "@/pages/Reports";
 import ActivityLog from "@/pages/ActivityLog";
 import SettingsPage from "@/pages/Settings";
 import MyDeliveries from "@/pages/MyDeliveries";
+import Promotions from "@/pages/Promotions";
+import FlashDeals from "@/pages/FlashDeals";
+import Coupons from "@/pages/Coupons";
 import ResetPassword from "@/pages/ResetPassword";
 import NotFound from "@/pages/NotFound";
 
@@ -61,6 +64,9 @@ const App = () => (
                 <Route path="activity" element={<ProtectedRoute module="activity"><ActivityLog /></ProtectedRoute>} />
                 <Route path="settings" element={<ProtectedRoute module="settings"><SettingsPage /></ProtectedRoute>} />
                 <Route path="my-deliveries" element={<ProtectedRoute module="delivery"><MyDeliveries /></ProtectedRoute>} />
+                <Route path="promotions" element={<ProtectedRoute module="promotions"><Promotions /></ProtectedRoute>} />
+                <Route path="flash-deals" element={<ProtectedRoute module="flash_deals"><FlashDeals /></ProtectedRoute>} />
+                <Route path="coupons" element={<ProtectedRoute module="coupons"><Coupons /></ProtectedRoute>} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
