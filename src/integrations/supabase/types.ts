@@ -342,6 +342,69 @@ export type Database = {
         }
         Relationships: []
       }
+      delivery_assignments: {
+        Row: {
+          created_at: string | null
+          delivered_at: string | null
+          delivery_notes: string | null
+          driver_id: string
+          gps_lat: number | null
+          gps_lng: number | null
+          id: string
+          order_id: string
+          pickup_at: string | null
+          proof_image_url: string | null
+          recipient_name: string | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          delivered_at?: string | null
+          delivery_notes?: string | null
+          driver_id: string
+          gps_lat?: number | null
+          gps_lng?: number | null
+          id?: string
+          order_id: string
+          pickup_at?: string | null
+          proof_image_url?: string | null
+          recipient_name?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          delivered_at?: string | null
+          delivery_notes?: string | null
+          driver_id?: string
+          gps_lat?: number | null
+          gps_lng?: number | null
+          id?: string
+          order_id?: string
+          pickup_at?: string | null
+          proof_image_url?: string | null
+          recipient_name?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_assignments_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_assignments_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_items: {
         Row: {
           created_at: string
@@ -1063,7 +1126,9 @@ export type Database = {
         Returns: number
       }
       get_customer_id_for_user: { Args: { _user_id: string }; Returns: string }
+      get_staff_department: { Args: never; Returns: string }
       get_staff_role: { Args: { _user_id: string }; Returns: string }
+      get_staff_role_level: { Args: never; Returns: number }
       is_staff: { Args: { _user_id: string }; Returns: boolean }
       search_products: {
         Args: { result_limit?: number; search_term: string }

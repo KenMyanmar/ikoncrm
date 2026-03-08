@@ -150,8 +150,74 @@ export default function OrderDetail() {
               <Button size="sm" variant="outline" className="w-full" onClick={() => notesMutation.mutate()}>Save Notes</Button>
             </CardContent>
           </Card>
+
+          <DeliveryAssignmentCard orderId={id!} staffRole={staff?.role || ""} />
         </div>
       </div>
     </div>
+  );
+}
+
+function DeliveryAssignmentCard({ orderId, staffRole }: { orderId: string; staffRole: string }) {
+  const queryClient = useQueryClient();
+  const canAssign = ["super_admin", "admin", "manager"].includes(staffRole);
+
+  const { data: assignment } = useQuery({
+    queryKey: ["delivery-assignment", orderId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("delivery_assignments")
+        .select("*, staff_profiles!delivery_assignments_driver_id_fkey(full_name, email)")
+        .eq("order_id", orderId)
+        .maybeSingle();
+      return data;
+    },
+  });
+
+  const { data: drivers } = useQuery({
+    queryKey: ["delivery-drivers"],
+    queryFn: async () => {
+      const { data } = await supabase.from("staff_profiles").select("id, full_name").eq("role", "delivery").eq("is_active", true);
+      return data || [];
+    },
+    enabled: canAssign,
+  });
+
+  const assignMutation = useMutation({
+    mutationFn: async (driverId: string) => {
+      const { error } = await supabase.from("delivery_assignments").insert({ order_id: orderId, driver_id: driverId } as any);
+      if (error) throw error;
+    },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["delivery-assignment", orderId] }); toast.success("Delivery assigned"); },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  if (!canAssign && !assignment) return null;
+
+  return (
+    <Card>
+      <CardHeader><CardTitle className="text-sm">Delivery Assignment</CardTitle></CardHeader>
+      <CardContent className="space-y-2">
+        {assignment ? (
+          <div className="text-sm space-y-1">
+            <p><span className="text-muted-foreground">Driver:</span> {(assignment as any).staff_profiles?.full_name || "—"}</p>
+            <p><span className="text-muted-foreground">Status:</span> <Badge variant="secondary">{assignment.status}</Badge></p>
+            {assignment.delivered_at && <p className="text-xs text-muted-foreground">Delivered: {new Date(assignment.delivered_at).toLocaleString()}</p>}
+          </div>
+        ) : canAssign ? (
+          <div className="space-y-2">
+            <select
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              defaultValue=""
+              onChange={e => { if (e.target.value) assignMutation.mutate(e.target.value); }}
+              disabled={assignMutation.isPending}
+            >
+              <option value="" disabled>Select delivery driver...</option>
+              {(drivers || []).map((d: any) => <option key={d.id} value={d.id}>{d.full_name}</option>)}
+            </select>
+          </div>
+        ) : null}
+      </CardContent>
+    </Card>
   );
 }
