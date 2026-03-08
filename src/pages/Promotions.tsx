@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { ImageUpload } from "@/components/ui/ImageUpload";
 import { Plus, Search, Pencil, Trash2, Tag, TrendingUp, Clock, Archive } from "lucide-react";
 import { format } from "date-fns";
 
