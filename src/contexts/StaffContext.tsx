@@ -109,48 +109,68 @@ export function StaffProvider({ children }: { children: React.ReactNode }) {
   const [staff, setStaff] = useState<StaffProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const fetchStaffProfile = (userId: string) => {
+    Promise.resolve(
+      supabase
+        .from("staff_profiles")
+        .select("*")
+        .eq("user_id", userId)
+        .eq("is_active", true)
+        .maybeSingle()
+    )
+      .then(({ data, error }) => {
+        if (error) console.error("Staff profile fetch error:", error);
+        setStaff(data as StaffProfile | null);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Staff profile fetch failed:", err);
+        setStaff(null);
+        setLoading(false);
+      });
+  };
+
   useEffect(() => {
-    // Restore session first
+    let isMounted = true;
+    let profileLoaded = false;
+
+    const loadProfile = (userId: string) => {
+      if (profileLoaded) return;
+      profileLoaded = true;
+      fetchStaffProfile(userId);
+    };
+
     supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!isMounted) return;
       const currentUser = session?.user ?? null;
       setUser(currentUser);
       if (currentUser) {
-        fetchStaffProfile(currentUser.id);
+        loadProfile(currentUser.id);
       } else {
         setLoading(false);
       }
     });
 
-    // Listen for subsequent changes — NO awaits inside callback
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
+        if (!isMounted) return;
         const currentUser = session?.user ?? null;
         setUser(currentUser);
         if (currentUser) {
-          // Fire and forget — don't await
-          fetchStaffProfile(currentUser.id);
+          loadProfile(currentUser.id);
         } else {
           setStaff(null);
           setLoading(false);
+          profileLoaded = false;
         }
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
-
-  const fetchStaffProfile = (userId: string) => {
-    supabase
-      .from("staff_profiles")
-      .select("*")
-      .eq("user_id", userId)
-      .eq("is_active", true)
-      .maybeSingle()
-      .then(({ data }) => {
-        setStaff(data as StaffProfile | null);
-        setLoading(false);
-      });
-  };
 
   const signOut = async () => {
     await supabase.auth.signOut();

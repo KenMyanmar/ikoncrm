@@ -19,6 +19,7 @@ export default function Dashboard() {
       const { count } = await supabase.from("products").select("*", { count: "exact", head: true });
       return count || 0;
     },
+    enabled: !!staff,
   });
 
   const { data: needsEnrichment } = useQuery({
@@ -27,6 +28,7 @@ export default function Dashboard() {
       const { count } = await supabase.from("products").select("*", { count: "exact", head: true }).lt("data_completeness", 50);
       return count || 0;
     },
+    enabled: !!staff,
   });
 
   const { data: pendingOrders } = useQuery({
@@ -35,6 +37,7 @@ export default function Dashboard() {
       const { count } = await supabase.from("orders").select("*", { count: "exact", head: true }).eq("status", "pending");
       return count || 0;
     },
+    enabled: !!staff,
   });
 
   const { data: pendingQuotes } = useQuery({
@@ -43,6 +46,7 @@ export default function Dashboard() {
       const { count } = await supabase.from("quotes").select("*", { count: "exact", head: true }).eq("status", "pending");
       return count || 0;
     },
+    enabled: !!staff,
   });
 
   const { data: recentActivity } = useQuery({
@@ -51,6 +55,7 @@ export default function Dashboard() {
       const { data } = await supabase.from("activity_log").select("*").order("created_at", { ascending: false }).limit(10);
       return data || [];
     },
+    enabled: !!staff,
   });
 
   const kpis = [
