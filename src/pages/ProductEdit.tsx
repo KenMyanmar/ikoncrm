@@ -476,8 +476,16 @@ export default function ProductEdit() {
             <CardHeader><CardTitle className="text-sm">Additional</CardTitle></CardHeader>
             <CardContent>
               <div>
-                <Label className="text-xs">Datasheet URL</Label>
-                <Input value={form.datasheet_url || ""} onChange={(e) => update("datasheet_url", e.target.value)} placeholder="https://..." />
+                <Label className="text-xs">Datasheet</Label>
+                <FileUpload
+                  bucket="product-images"
+                  folder="datasheets"
+                  value={form.datasheet_url || ""}
+                  onChange={(url) => update("datasheet_url", url)}
+                  maxSizeMB={10}
+                  accept=".pdf,.doc,.docx,.xls,.xlsx"
+                  label="PDF, DOC, XLS — Max 10MB"
+                />
               </div>
             </CardContent>
           </Card>
