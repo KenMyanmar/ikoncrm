@@ -37,7 +37,7 @@ export function FileUpload({
     }
 
     setUploading(true);
-    const ext = file.name.split(".").pop()?.toLowerCase() || "pdf";
+    
     const timestamp = Date.now();
     const random = Math.random().toString(36).slice(2, 8);
     const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");

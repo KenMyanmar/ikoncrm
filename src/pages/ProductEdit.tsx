@@ -16,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { Save, ArrowRight, ArrowLeft, Plus, Trash2, X } from "lucide-react";
 import { ImageUpload } from "@/components/ui/ImageUpload";
+import { FileUpload } from "@/components/ui/FileUpload";
 
 export default function ProductEdit() {
   const { id } = useParams<{ id: string }>();
