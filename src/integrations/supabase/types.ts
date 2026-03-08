@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      activity_log: {
+        Row: {
+          action: string
+          created_at: string
+          details: Json | null
+          entity_id: string | null
+          entity_name: string | null
+          entity_type: string
+          id: string
+          staff_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          details?: Json | null
+          entity_id?: string | null
+          entity_name?: string | null
+          entity_type: string
+          id?: string
+          staff_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          details?: Json | null
+          entity_id?: string | null
+          entity_name?: string | null
+          entity_type?: string
+          id?: string
+          staff_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_log_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       banners: {
         Row: {
           created_at: string
@@ -361,6 +402,7 @@ export type Database = {
       }
       orders: {
         Row: {
+          assigned_to: string | null
           created_at: string
           currency: string
           customer_id: string | null
@@ -375,8 +417,10 @@ export type Database = {
           payment_method: string | null
           payment_reference: string | null
           payment_status: string
+          priority: string
           purchase_order_number: string | null
           shipping_cost: number
+          source: string | null
           status: string
           subtotal: number | null
           tax: number
@@ -385,6 +429,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          assigned_to?: string | null
           created_at?: string
           currency?: string
           customer_id?: string | null
@@ -399,8 +444,10 @@ export type Database = {
           payment_method?: string | null
           payment_reference?: string | null
           payment_status?: string
+          priority?: string
           purchase_order_number?: string | null
           shipping_cost?: number
+          source?: string | null
           status?: string
           subtotal?: number | null
           tax?: number
@@ -409,6 +456,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          assigned_to?: string | null
           created_at?: string
           currency?: string
           customer_id?: string | null
@@ -423,8 +471,10 @@ export type Database = {
           payment_method?: string | null
           payment_reference?: string | null
           payment_status?: string
+          priority?: string
           purchase_order_number?: string | null
           shipping_cost?: number
+          source?: string | null
           status?: string
           subtotal?: number | null
           tax?: number
@@ -433,6 +483,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "orders_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "orders_customer_id_fkey"
             columns: ["customer_id"]
@@ -518,20 +575,79 @@ export type Database = {
         }
         Relationships: []
       }
+      product_images: {
+        Row: {
+          alt_text: string | null
+          created_at: string
+          id: string
+          image_url: string
+          is_primary: boolean
+          product_id: string
+          sort_order: number
+          uploaded_by: string | null
+        }
+        Insert: {
+          alt_text?: string | null
+          created_at?: string
+          id?: string
+          image_url: string
+          is_primary?: boolean
+          product_id: string
+          sort_order?: number
+          uploaded_by?: string | null
+        }
+        Update: {
+          alt_text?: string | null
+          created_at?: string
+          id?: string
+          image_url?: string
+          is_primary?: boolean
+          product_id?: string
+          sort_order?: number
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_images_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_images_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_images_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           brand_id: string | null
           category_id: string | null
           created_at: string
           currency: string
+          data_completeness: number
           datasheet_url: string | null
           description: string
+          enriched_by: string | null
           group_id: string | null
           id: string
           images: Json
           is_active: boolean
           is_featured: boolean
           item_type: string | null
+          last_enriched_at: string | null
+          long_description: string | null
           main_vendor: string | null
           max_qty: number
           min_qty: number
@@ -547,6 +663,7 @@ export type Database = {
           specifications: Json
           stock_code: string
           stock_status: string
+          tags: string[] | null
           thumbnail_url: string | null
           unit_cost: number
           unit_of_measure: string | null
@@ -557,14 +674,18 @@ export type Database = {
           category_id?: string | null
           created_at?: string
           currency?: string
+          data_completeness?: number
           datasheet_url?: string | null
           description: string
+          enriched_by?: string | null
           group_id?: string | null
           id?: string
           images?: Json
           is_active?: boolean
           is_featured?: boolean
           item_type?: string | null
+          last_enriched_at?: string | null
+          long_description?: string | null
           main_vendor?: string | null
           max_qty?: number
           min_qty?: number
@@ -580,6 +701,7 @@ export type Database = {
           specifications?: Json
           stock_code: string
           stock_status?: string
+          tags?: string[] | null
           thumbnail_url?: string | null
           unit_cost?: number
           unit_of_measure?: string | null
@@ -590,14 +712,18 @@ export type Database = {
           category_id?: string | null
           created_at?: string
           currency?: string
+          data_completeness?: number
           datasheet_url?: string | null
           description?: string
+          enriched_by?: string | null
           group_id?: string | null
           id?: string
           images?: Json
           is_active?: boolean
           is_featured?: boolean
           item_type?: string | null
+          last_enriched_at?: string | null
+          long_description?: string | null
           main_vendor?: string | null
           max_qty?: number
           min_qty?: number
@@ -613,6 +739,7 @@ export type Database = {
           specifications?: Json
           stock_code?: string
           stock_status?: string
+          tags?: string[] | null
           thumbnail_url?: string | null
           unit_cost?: number
           unit_of_measure?: string | null
@@ -634,6 +761,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "products_enriched_by_fkey"
+            columns: ["enriched_by"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "products_group_id_fkey"
             columns: ["group_id"]
             isOneToOne: false
@@ -645,13 +779,17 @@ export type Database = {
       quotes: {
         Row: {
           additional_notes: string | null
+          admin_internal_notes: string | null
+          assigned_to: string | null
           attachments: Json
           budget_range: string | null
           converted_order_id: string | null
           created_at: string
           customer_id: string | null
+          follow_up_date: string | null
           id: string
           items: Json
+          priority: string
           project_type: string | null
           quote_number: string
           response_items: Json | null
@@ -664,13 +802,17 @@ export type Database = {
         }
         Insert: {
           additional_notes?: string | null
+          admin_internal_notes?: string | null
+          assigned_to?: string | null
           attachments?: Json
           budget_range?: string | null
           converted_order_id?: string | null
           created_at?: string
           customer_id?: string | null
+          follow_up_date?: string | null
           id?: string
           items: Json
+          priority?: string
           project_type?: string | null
           quote_number?: string
           response_items?: Json | null
@@ -683,13 +825,17 @@ export type Database = {
         }
         Update: {
           additional_notes?: string | null
+          admin_internal_notes?: string | null
+          assigned_to?: string | null
           attachments?: Json
           budget_range?: string | null
           converted_order_id?: string | null
           created_at?: string
           customer_id?: string | null
+          follow_up_date?: string | null
           id?: string
           items?: Json
+          priority?: string
           project_type?: string | null
           quote_number?: string
           response_items?: Json | null
@@ -701,6 +847,13 @@ export type Database = {
           valid_until?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "quotes_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "quotes_converted_order_id_fkey"
             columns: ["converted_order_id"]
@@ -795,6 +948,48 @@ export type Database = {
           },
         ]
       }
+      staff_profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          department: string | null
+          email: string
+          full_name: string
+          id: string
+          is_active: boolean
+          last_login_at: string | null
+          role: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          department?: string | null
+          email: string
+          full_name: string
+          id?: string
+          is_active?: boolean
+          last_login_at?: string | null
+          role?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          department?: string | null
+          email?: string
+          full_name?: string
+          id?: string
+          is_active?: boolean
+          last_login_at?: string | null
+          role?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       products_public: {
@@ -863,7 +1058,13 @@ export type Database = {
       }
     }
     Functions: {
+      calculate_data_completeness: {
+        Args: { _product_id: string }
+        Returns: number
+      }
       get_customer_id_for_user: { Args: { _user_id: string }; Returns: string }
+      get_staff_role: { Args: { _user_id: string }; Returns: string }
+      is_staff: { Args: { _user_id: string }; Returns: boolean }
       search_products: {
         Args: { result_limit?: number; search_term: string }
         Returns: {
