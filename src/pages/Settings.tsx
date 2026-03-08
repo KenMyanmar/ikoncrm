@@ -254,7 +254,7 @@ export default function SettingsPage() {
                       >
                         <div className={cn(
                           "h-10 w-16 rounded-md border",
-                          t === "light" ? "bg-white" : t === "dark" ? "bg-zinc-900" : "bg-gradient-to-r from-white to-zinc-900"
+                          t === "light" ? "bg-background border-border" : t === "dark" ? "bg-foreground" : "bg-gradient-to-r from-background to-foreground"
                         )} />
                         {t}
                       </button>
