@@ -97,7 +97,7 @@ export default function BannerList() {
             <div className="space-y-4">
               <div><Label>Title</Label><Input value={editing.title || ""} onChange={e => setEditing({ ...editing, title: e.target.value })} /></div>
               <div><Label>Subtitle</Label><Input value={editing.subtitle || ""} onChange={e => setEditing({ ...editing, subtitle: e.target.value })} /></div>
-              <div><Label>Image URL</Label><Input value={editing.image_url} onChange={e => setEditing({ ...editing, image_url: e.target.value })} /></div>
+              <div><Label>Image</Label><ImageUpload bucket="banners" value={editing.image_url || ""} onChange={url => setEditing({ ...editing, image_url: url })} aspectHint="1920×600px for hero banners" /></div>
               <div><Label>Link URL</Label><Input value={editing.link_url || ""} onChange={e => setEditing({ ...editing, link_url: e.target.value })} /></div>
               <div><Label>Position</Label><Input value={editing.position || ""} onChange={e => setEditing({ ...editing, position: e.target.value })} /></div>
               <div><Label>Sort Order</Label><Input type="number" value={editing.sort_order} onChange={e => setEditing({ ...editing, sort_order: Number(e.target.value) })} /></div>
