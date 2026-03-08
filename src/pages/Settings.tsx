@@ -318,6 +318,16 @@ export default function SettingsPage() {
                 <CardContent>
                   <div className="space-y-4 max-w-sm">
                     <div className="space-y-2">
+                      <Label htmlFor="current-pw">Current Password</Label>
+                      <Input
+                        id="current-pw"
+                        type={showPassword ? "text" : "password"}
+                        value={currentPassword}
+                        onChange={(e) => setCurrentPassword(e.target.value)}
+                        placeholder="Enter current password"
+                      />
+                    </div>
+                    <div className="space-y-2">
                       <Label htmlFor="new-pw">New Password</Label>
                       <div className="relative">
                         <Input
