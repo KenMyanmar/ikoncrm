@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Switch } from "@/components/ui/switch";
+
 import {
   User, Shield, Palette, Settings as SettingsIcon,
   Eye, EyeOff, Pencil, X, Check, Clock, Building2, Mail, Lock
