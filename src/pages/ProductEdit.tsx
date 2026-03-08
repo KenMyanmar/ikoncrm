@@ -14,7 +14,7 @@ import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Save, ArrowRight, ArrowLeft, Plus, Trash2, X } from "lucide-react";
+import { Save, ArrowRight, ArrowLeft, Plus, Trash2, X, Star } from "lucide-react";
 import { ImageUpload } from "@/components/ui/ImageUpload";
 import { FileUpload } from "@/components/ui/FileUpload";
 
