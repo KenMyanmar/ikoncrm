@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Zap, Copy, Pencil, Trash2, Search, TrendingUp, Package, DollarSign } from "lucide-react";
+import { Zap, Copy, Pencil, Trash2, Search, Package, DollarSign } from "lucide-react";
 import { format, formatDistanceToNow, differenceInSeconds } from "date-fns";
 
 interface FlashDeal {
