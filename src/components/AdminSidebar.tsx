@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, Package, Grid3X3, Tag, ShoppingCart, FileText,
-  Users, Image, UserCog, BarChart3, Activity, Settings, LogOut,
+  Users, Image, UserCog, BarChart3, Activity, Settings, LogOut, Truck,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useStaff, hasPermission } from "@/contexts/StaffContext";
@@ -42,6 +42,12 @@ const navGroups = [
     ],
   },
   {
+    label: "Delivery",
+    items: [
+      { title: "My Deliveries", url: "/my-deliveries", icon: Truck, module: "delivery" },
+    ],
+  },
+  {
     label: "System",
     items: [
       { title: "Staff", url: "/staff", icon: UserCog, module: "staff" },
@@ -61,10 +67,7 @@ export function AdminSidebar() {
   const filteredGroups = navGroups
     .map(group => ({
       ...group,
-      items: group.items.filter(item => {
-        if (item.module === "staff" || item.module === "settings") return role === "super_admin";
-        return hasPermission(role, item.module);
-      }),
+      items: group.items.filter(item => hasPermission(role, item.module)),
     }))
     .filter(g => g.items.length > 0);
 

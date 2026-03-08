@@ -32,19 +32,76 @@ const StaffContext = createContext<StaffContextType>({
 
 export const useStaff = () => useContext(StaffContext);
 
-const ROLE_PERMISSIONS: Record<string, string[]> = {
-  super_admin: ["*"],
-  admin: ["dashboard", "products", "orders", "quotes", "customers", "categories", "brands", "banners", "reports", "activity"],
-  sales_manager: ["dashboard", "orders", "quotes", "customers", "reports"],
-  sales_rep: ["dashboard", "orders", "quotes", "customers"],
-  catalog_manager: ["dashboard", "products", "categories", "brands", "banners"],
-  viewer: ["dashboard"],
+interface RolePermissions {
+  canManageStaff: boolean;
+  canManageProducts: boolean;
+  canManageOrders: boolean;
+  canManageCustomers: boolean;
+  canManageBanners: boolean;
+  canViewReports: boolean;
+  canManageCategories: boolean;
+  canManageBrands: boolean;
+  canManageQuotes: boolean;
+  canManageDelivery: boolean;
+  canViewActivityLog: boolean;
+  canExportData: boolean;
+}
+
+const ROLE_PERMISSIONS: Record<string, RolePermissions> = {
+  super_admin: {
+    canManageStaff: true, canManageProducts: true, canManageOrders: true,
+    canManageCustomers: true, canManageBanners: true, canViewReports: true,
+    canManageCategories: true, canManageBrands: true, canManageQuotes: true,
+    canManageDelivery: true, canViewActivityLog: true, canExportData: true,
+  },
+  admin: {
+    canManageStaff: true, canManageProducts: true, canManageOrders: true,
+    canManageCustomers: true, canManageBanners: true, canViewReports: true,
+    canManageCategories: true, canManageBrands: true, canManageQuotes: true,
+    canManageDelivery: true, canViewActivityLog: true, canExportData: true,
+  },
+  manager: {
+    canManageStaff: false, canManageProducts: true, canManageOrders: true,
+    canManageCustomers: true, canManageBanners: true, canViewReports: true,
+    canManageCategories: true, canManageBrands: true, canManageQuotes: true,
+    canManageDelivery: true, canViewActivityLog: false, canExportData: false,
+  },
+  staff: {
+    canManageStaff: false, canManageProducts: true, canManageOrders: true,
+    canManageCustomers: true, canManageBanners: false, canViewReports: false,
+    canManageCategories: false, canManageBrands: false, canManageQuotes: true,
+    canManageDelivery: false, canViewActivityLog: false, canExportData: false,
+  },
+  delivery: {
+    canManageStaff: false, canManageProducts: false, canManageOrders: false,
+    canManageCustomers: false, canManageBanners: false, canViewReports: false,
+    canManageCategories: false, canManageBrands: false, canManageQuotes: false,
+    canManageDelivery: true, canViewActivityLog: false, canExportData: false,
+  },
+};
+
+const MODULE_TO_PERMISSION: Record<string, keyof RolePermissions> = {
+  products: "canManageProducts",
+  categories: "canManageCategories",
+  brands: "canManageBrands",
+  orders: "canManageOrders",
+  quotes: "canManageQuotes",
+  customers: "canManageCustomers",
+  banners: "canManageBanners",
+  staff: "canManageStaff",
+  reports: "canViewReports",
+  activity: "canViewActivityLog",
+  settings: "canManageStaff",
+  delivery: "canManageDelivery",
 };
 
 export function hasPermission(role: string, module: string): boolean {
+  if (module === "dashboard") return true;
   const perms = ROLE_PERMISSIONS[role];
   if (!perms) return false;
-  return perms.includes("*") || perms.includes(module);
+  const key = MODULE_TO_PERMISSION[module];
+  if (!key) return false;
+  return perms[key];
 }
 
 export function StaffProvider({ children }: { children: React.ReactNode }) {

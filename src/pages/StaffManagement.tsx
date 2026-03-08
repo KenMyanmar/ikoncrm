@@ -13,7 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { Plus, Edit } from "lucide-react";
 
-const ROLES = ["super_admin", "admin", "sales_manager", "sales_rep", "catalog_manager", "viewer"];
+const ROLES = ["super_admin", "admin", "manager", "staff", "delivery"];
 
 export default function StaffManagement() {
   const queryClient = useQueryClient();

@@ -24,6 +24,7 @@ import StaffManagement from "@/pages/StaffManagement";
 import Reports from "@/pages/Reports";
 import ActivityLog from "@/pages/ActivityLog";
 import SettingsPage from "@/pages/Settings";
+import MyDeliveries from "@/pages/MyDeliveries";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -55,6 +56,7 @@ const App = () => (
               <Route path="reports" element={<ProtectedRoute module="reports"><Reports /></ProtectedRoute>} />
               <Route path="activity" element={<ProtectedRoute module="activity"><ActivityLog /></ProtectedRoute>} />
               <Route path="settings" element={<ProtectedRoute module="settings"><SettingsPage /></ProtectedRoute>} />
+              <Route path="my-deliveries" element={<ProtectedRoute module="delivery"><MyDeliveries /></ProtectedRoute>} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
