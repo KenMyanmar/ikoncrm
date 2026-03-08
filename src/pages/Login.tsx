@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { toast } from "sonner";
-import { ShieldCheck } from "lucide-react";
+import ikonLogo from "@/assets/ikon-logo.png";
 
 export default function Login() {
   const [email, setEmail] = useState("");
