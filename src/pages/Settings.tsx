@@ -49,6 +49,7 @@ export default function SettingsPage() {
   const [savingProfile, setSavingProfile] = useState(false);
 
   // Password state
+  const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
