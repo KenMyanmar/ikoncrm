@@ -109,36 +109,6 @@ export function StaffProvider({ children }: { children: React.ReactNode }) {
   const [staff, setStaff] = useState<StaffProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // Restore session first
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      const currentUser = session?.user ?? null;
-      setUser(currentUser);
-      if (currentUser) {
-        fetchStaffProfile(currentUser.id);
-      } else {
-        setLoading(false);
-      }
-    });
-
-    // Listen for subsequent changes — NO awaits inside callback
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        const currentUser = session?.user ?? null;
-        setUser(currentUser);
-        if (currentUser) {
-          // Fire and forget — don't await
-          fetchStaffProfile(currentUser.id);
-        } else {
-          setStaff(null);
-          setLoading(false);
-        }
-      }
-    );
-
-    return () => subscription.unsubscribe();
-  }, []);
-
   const fetchStaffProfile = (userId: string) => {
     supabase
       .from("staff_profiles")
@@ -146,11 +116,59 @@ export function StaffProvider({ children }: { children: React.ReactNode }) {
       .eq("user_id", userId)
       .eq("is_active", true)
       .maybeSingle()
-      .then(({ data }) => {
+      .then(({ data, error }) => {
+        if (error) console.error("Staff profile fetch error:", error);
         setStaff(data as StaffProfile | null);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Staff profile fetch failed:", err);
+        setStaff(null);
         setLoading(false);
       });
   };
+
+  useEffect(() => {
+    let isMounted = true;
+    let profileLoaded = false;
+
+    const loadProfile = (userId: string) => {
+      if (profileLoaded) return;
+      profileLoaded = true;
+      fetchStaffProfile(userId);
+    };
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!isMounted) return;
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
+      if (currentUser) {
+        loadProfile(currentUser.id);
+      } else {
+        setLoading(false);
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        if (!isMounted) return;
+        const currentUser = session?.user ?? null;
+        setUser(currentUser);
+        if (currentUser) {
+          loadProfile(currentUser.id);
+        } else {
+          setStaff(null);
+          setLoading(false);
+          profileLoaded = false;
+        }
+      }
+    );
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
 
   const signOut = async () => {
     await supabase.auth.signOut();
