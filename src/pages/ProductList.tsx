@@ -19,6 +19,22 @@ export default function ProductList() {
   const [page, setPage] = useState(0);
   const [statusFilter, setStatusFilter] = useState("all");
 
+  // Categories lookup for breadcrumb paths
+  const { data: catMap } = useQuery({
+    queryKey: ["categories-lookup"],
+    queryFn: async () => {
+      const { data } = await supabase.from("categories").select("id, name, parent_id");
+      const map = new Map<string, { name: string; parentName?: string }>();
+      const all = data || [];
+      const byId = new Map(all.map(c => [c.id, c]));
+      all.forEach(c => {
+        const parent = c.parent_id ? byId.get(c.parent_id) : null;
+        map.set(c.id, { name: c.name, parentName: parent?.name || undefined });
+      });
+      return map;
+    },
+  });
+
   const { data, isLoading } = useQuery({
     queryKey: ["admin-products", search, page, statusFilter],
     queryFn: async () => {
