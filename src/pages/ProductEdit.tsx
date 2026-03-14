@@ -360,6 +360,16 @@ export default function ProductEdit() {
                 <Textarea value={form.short_description || ""} onChange={(e) => update("short_description", e.target.value)} rows={2} />
               </div>
               <div>
+                <Label className="text-xs">Features</Label>
+                <Textarea
+                  value={form.features || ""}
+                  onChange={(e) => update("features", e.target.value)}
+                  rows={5}
+                  placeholder={"100% Cotton with long staple fiber\nMachine washable\nGreat for Hotels and Spas"}
+                />
+                <p className="text-xs text-muted-foreground mt-1">One feature per line. Displays as bullet points on E-Mall.</p>
+              </div>
+              <div>
                 <Label className="text-xs">Long Description</Label>
                 <Textarea value={form.long_description || ""} onChange={(e) => update("long_description", e.target.value)} rows={4} />
               </div>
