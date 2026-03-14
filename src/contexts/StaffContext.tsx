@@ -46,6 +46,7 @@ interface RolePermissions {
   canViewActivityLog: boolean;
   canExportData: boolean;
   canManagePromotions: boolean;
+  canManageReviews: boolean;
 }
 
 const ROLE_PERMISSIONS: Record<string, RolePermissions> = {
@@ -54,35 +55,35 @@ const ROLE_PERMISSIONS: Record<string, RolePermissions> = {
     canManageCustomers: true, canManageBanners: true, canViewReports: true,
     canManageCategories: true, canManageBrands: true, canManageQuotes: true,
     canManageDelivery: true, canViewActivityLog: true, canExportData: true,
-    canManagePromotions: true,
+    canManagePromotions: true, canManageReviews: true,
   },
   admin: {
     canManageStaff: true, canManageProducts: true, canManageOrders: true,
     canManageCustomers: true, canManageBanners: true, canViewReports: true,
     canManageCategories: true, canManageBrands: true, canManageQuotes: true,
     canManageDelivery: true, canViewActivityLog: true, canExportData: true,
-    canManagePromotions: true,
+    canManagePromotions: true, canManageReviews: true,
   },
   manager: {
     canManageStaff: false, canManageProducts: true, canManageOrders: true,
     canManageCustomers: true, canManageBanners: true, canViewReports: true,
     canManageCategories: true, canManageBrands: true, canManageQuotes: true,
     canManageDelivery: true, canViewActivityLog: false, canExportData: false,
-    canManagePromotions: true,
+    canManagePromotions: true, canManageReviews: true,
   },
   staff: {
     canManageStaff: false, canManageProducts: true, canManageOrders: true,
     canManageCustomers: true, canManageBanners: false, canViewReports: false,
     canManageCategories: false, canManageBrands: false, canManageQuotes: true,
     canManageDelivery: false, canViewActivityLog: false, canExportData: false,
-    canManagePromotions: false,
+    canManagePromotions: false, canManageReviews: true,
   },
   delivery: {
     canManageStaff: false, canManageProducts: false, canManageOrders: false,
     canManageCustomers: false, canManageBanners: false, canViewReports: false,
     canManageCategories: false, canManageBrands: false, canManageQuotes: false,
     canManageDelivery: true, canViewActivityLog: false, canExportData: false,
-    canManagePromotions: false,
+    canManagePromotions: false, canManageReviews: false,
   },
 };
 
@@ -102,6 +103,7 @@ const MODULE_TO_PERMISSION: Record<string, keyof RolePermissions> = {
   promotions: "canManagePromotions",
   flash_deals: "canManagePromotions",
   coupons: "canManagePromotions",
+  reviews: "canManageReviews",
 };
 
 export function hasPermission(role: string, module: string): boolean {

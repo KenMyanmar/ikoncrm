@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, Package, Grid3X3, Tag, ShoppingCart, FileText,
   Users, Image, UserCog, BarChart3, Activity, Settings, LogOut, Truck,
-  Percent, Zap, Ticket,
+  Percent, Zap, Ticket, MessageSquare,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useStaff, hasPermission } from "@/contexts/StaffContext";
@@ -35,6 +35,7 @@ const navGroups = [
       { title: "Orders", url: "/orders", icon: ShoppingCart, module: "orders" },
       { title: "Quotes", url: "/quotes", icon: FileText, module: "quotes" },
       { title: "Customers", url: "/customers", icon: Users, module: "customers" },
+      { title: "Reviews", url: "/reviews", icon: MessageSquare, module: "reviews" },
     ],
   },
   {

@@ -29,6 +29,7 @@ import MyDeliveries from "@/pages/MyDeliveries";
 import Promotions from "@/pages/Promotions";
 import FlashDeals from "@/pages/FlashDeals";
 import Coupons from "@/pages/Coupons";
+import ReviewList from "@/pages/ReviewList";
 import ResetPassword from "@/pages/ResetPassword";
 import NotFound from "@/pages/NotFound";
 
@@ -67,6 +68,7 @@ const App = () => (
                 <Route path="promotions" element={<ProtectedRoute module="promotions"><Promotions /></ProtectedRoute>} />
                 <Route path="flash-deals" element={<ProtectedRoute module="flash_deals"><FlashDeals /></ProtectedRoute>} />
                 <Route path="coupons" element={<ProtectedRoute module="coupons"><Coupons /></ProtectedRoute>} />
+                <Route path="reviews" element={<ProtectedRoute module="reviews"><ReviewList /></ProtectedRoute>} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
