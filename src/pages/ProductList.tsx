@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +18,22 @@ export default function ProductList() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
   const [statusFilter, setStatusFilter] = useState("all");
+
+  // Categories lookup for breadcrumb paths
+  const { data: catMap } = useQuery({
+    queryKey: ["categories-lookup"],
+    queryFn: async () => {
+      const { data } = await supabase.from("categories").select("id, name, parent_id");
+      const map = new Map<string, { name: string; parentName?: string }>();
+      const all = data || [];
+      const byId = new Map(all.map(c => [c.id, c]));
+      all.forEach(c => {
+        const parent = c.parent_id ? byId.get(c.parent_id) : null;
+        map.set(c.id, { name: c.name, parentName: parent?.name || undefined });
+      });
+      return map;
+    },
+  });
 
   const { data, isLoading } = useQuery({
     queryKey: ["admin-products", search, page, statusFilter],
@@ -86,6 +102,7 @@ export default function ProductList() {
                   <TableHead className="w-12"></TableHead>
                   <TableHead>Code</TableHead>
                   <TableHead className="min-w-[200px]">Description</TableHead>
+                  <TableHead>Category</TableHead>
                   <TableHead>Price</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Completeness</TableHead>
@@ -93,15 +110,19 @@ export default function ProductList() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {isLoading && <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Loading…</TableCell></TableRow>}
-                {!isLoading && (data?.products || []).length === 0 && <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">No products found.</TableCell></TableRow>}
-                {(data?.products || []).map((p: any) => (
+                {isLoading && <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Loading…</TableCell></TableRow>}
+                {!isLoading && (data?.products || []).length === 0 && <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">No products found.</TableCell></TableRow>}
+                {(data?.products || []).map((p: any) => {
+                  const cat = p.category_id && catMap ? catMap.get(p.category_id) : null;
+                  const catPath = cat ? (cat.parentName ? `${cat.parentName} > ${cat.name}` : cat.name) : "—";
+                  return (
                   <TableRow key={p.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/products/${p.id}`)}>
                     <TableCell>
                       {p.thumbnail_url ? <img src={p.thumbnail_url} className="h-8 w-8 rounded object-cover" alt="" /> : <div className="h-8 w-8 rounded bg-muted" />}
                     </TableCell>
                     <TableCell className="font-mono text-xs">{p.stock_code}</TableCell>
                     <TableCell className="text-sm truncate max-w-[300px]">{p.description}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground max-w-[180px] truncate">{catPath}</TableCell>
                     <TableCell className="text-sm">{p.selling_price ? `${p.selling_price.toLocaleString()} ${p.currency}` : "—"}</TableCell>
                     <TableCell><Badge variant="secondary" className={`text-[10px] ${statusColor(p.stock_status)}`}>{p.stock_status.replace("_", " ")}</Badge></TableCell>
                     <TableCell>
@@ -112,7 +133,8 @@ export default function ProductList() {
                     </TableCell>
                     <TableCell><Edit className="h-4 w-4 text-muted-foreground" /></TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
           </div>

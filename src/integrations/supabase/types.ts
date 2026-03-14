@@ -194,12 +194,14 @@ export type Database = {
       categories: {
         Row: {
           created_at: string
+          depth: number | null
           description: string | null
           group_id: string | null
           id: string
           image_url: string | null
           is_active: boolean
           name: string
+          parent_id: string | null
           product_count: number
           slug: string
           sort_order: number
@@ -207,12 +209,14 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          depth?: number | null
           description?: string | null
           group_id?: string | null
           id?: string
           image_url?: string | null
           is_active?: boolean
           name: string
+          parent_id?: string | null
           product_count?: number
           slug: string
           sort_order?: number
@@ -220,12 +224,14 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          depth?: number | null
           description?: string | null
           group_id?: string | null
           id?: string
           image_url?: string | null
           is_active?: boolean
           name?: string
+          parent_id?: string | null
           product_count?: number
           slug?: string
           sort_order?: number
@@ -237,6 +243,13 @@ export type Database = {
             columns: ["group_id"]
             isOneToOne: false
             referencedRelation: "product_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
             referencedColumns: ["id"]
           },
         ]
@@ -874,6 +887,7 @@ export type Database = {
           datasheet_url: string | null
           description: string
           enriched_by: string | null
+          features: string | null
           group_id: string | null
           id: string
           images: Json
@@ -912,6 +926,7 @@ export type Database = {
           datasheet_url?: string | null
           description: string
           enriched_by?: string | null
+          features?: string | null
           group_id?: string | null
           id?: string
           images?: Json
@@ -950,6 +965,7 @@ export type Database = {
           datasheet_url?: string | null
           description?: string
           enriched_by?: string | null
+          features?: string | null
           group_id?: string | null
           id?: string
           images?: Json
@@ -1364,10 +1380,23 @@ export type Database = {
       }
     }
     Functions: {
+      bulk_update_product: {
+        Args: {
+          p_long_description?: string
+          p_selling_price?: number
+          p_short_description?: string
+          p_specifications?: Json
+          p_stock_code: string
+          p_subcategory_name?: string
+          p_unit_of_measure?: string
+        }
+        Returns: string
+      }
       calculate_data_completeness: {
         Args: { _product_id: string }
         Returns: number
       }
+      get_category_path: { Args: { cat_id: string }; Returns: string }
       get_customer_id_for_user: { Args: { _user_id: string }; Returns: string }
       get_staff_department: { Args: never; Returns: string }
       get_staff_role: { Args: { _user_id: string }; Returns: string }
