@@ -145,6 +145,13 @@ export function StaffProvider({ children }: { children: React.ReactNode }) {
     let isMounted = true;
     let profileLoaded = false;
 
+    // Early hash check: if URL contains recovery token, redirect to reset page
+    const hash = window.location.hash;
+    if (hash && hash.includes("type=recovery") && window.location.pathname !== "/reset-password") {
+      window.location.href = "/reset-password" + hash;
+      return;
+    }
+
     const loadProfile = (userId: string) => {
       if (profileLoaded) return;
       profileLoaded = true;
@@ -163,7 +170,15 @@ export function StaffProvider({ children }: { children: React.ReactNode }) {
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      (event, session) => {
+        // Intercept password recovery — redirect to reset page, not dashboard
+        if (event === "PASSWORD_RECOVERY") {
+          if (window.location.pathname !== "/reset-password") {
+            window.location.href = "/reset-password";
+          }
+          return;
+        }
+
         if (!isMounted) return;
         const currentUser = session?.user ?? null;
         setUser(currentUser);

@@ -38,17 +38,26 @@ export default function ResetPassword() {
       }
     });
 
-    const checkSession = async () => {
+    const init = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         setStatus("ready");
       } else {
-        setTimeout(() => {
-          setStatus((prev) => (prev === "loading" ? "error" : prev));
-        }, 5000);
+        const hash = window.location.hash;
+        if (hash && (hash.includes("type=recovery") || hash.includes("access_token"))) {
+          // Token in URL but not yet exchanged — give it more time
+          setTimeout(() => {
+            setStatus((prev) => (prev === "loading" ? "error" : prev));
+          }, 8000);
+        } else {
+          // No hash, no session — invalid access
+          setStatus("error");
+        }
       }
     };
-    checkSession();
+
+    // Delay init to let onAuthStateChange fire first
+    setTimeout(init, 500);
 
     return () => subscription.unsubscribe();
   }, []);
