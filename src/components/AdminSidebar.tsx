@@ -35,6 +35,7 @@ const navGroups = [
       { title: "Orders", url: "/orders", icon: ShoppingCart, module: "orders" },
       { title: "Quotes", url: "/quotes", icon: FileText, module: "quotes" },
       { title: "Customers", url: "/customers", icon: Users, module: "customers" },
+      { title: "Reviews", url: "/reviews", icon: MessageSquare, module: "reviews" },
     ],
   },
   {

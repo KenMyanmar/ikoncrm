@@ -103,6 +103,7 @@ const MODULE_TO_PERMISSION: Record<string, keyof RolePermissions> = {
   promotions: "canManagePromotions",
   flash_deals: "canManagePromotions",
   coupons: "canManagePromotions",
+  reviews: "canManageReviews",
 };
 
 export function hasPermission(role: string, module: string): boolean {
