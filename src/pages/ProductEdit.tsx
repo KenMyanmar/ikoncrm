@@ -386,9 +386,31 @@ export default function ProductEdit() {
                   <Select value={form.category_id || ""} onValueChange={(v) => update("category_id", v || null)}>
                     <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
                     <SelectContent>
-                      {(categories || []).map((c) => (
-                        <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                      ))}
+                      {(() => {
+                        const cats = categories || [];
+                        const parents = cats.filter(c => (c.depth ?? 0) === 0);
+                        const children = cats.filter(c => (c.depth ?? 0) === 1);
+                        const childrenByParent = new Map<string, typeof cats>();
+                        children.forEach(c => {
+                          const list = childrenByParent.get(c.parent_id!) || [];
+                          list.push(c);
+                          childrenByParent.set(c.parent_id!, list);
+                        });
+                        return parents.map(p => {
+                          const subs = childrenByParent.get(p.id) || [];
+                          if (subs.length === 0) {
+                            return <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>;
+                          }
+                          return (
+                            <div key={p.id}>
+                              <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">{p.name}</div>
+                              {subs.map(s => (
+                                <SelectItem key={s.id} value={s.id} className="pl-6">{s.name}</SelectItem>
+                              ))}
+                            </div>
+                          );
+                        });
+                      })()}
                     </SelectContent>
                   </Select>
                 </div>
