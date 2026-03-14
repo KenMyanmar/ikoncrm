@@ -1192,6 +1192,86 @@ export type Database = {
           },
         ]
       }
+      reviews: {
+        Row: {
+          admin_response: string | null
+          comment: string | null
+          created_at: string | null
+          customer_id: string | null
+          id: string
+          is_verified_purchase: boolean | null
+          product_id: string
+          rating: number
+          responded_at: string | null
+          responded_by: string | null
+          reviewer_email: string | null
+          reviewer_name: string
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          admin_response?: string | null
+          comment?: string | null
+          created_at?: string | null
+          customer_id?: string | null
+          id?: string
+          is_verified_purchase?: boolean | null
+          product_id: string
+          rating: number
+          responded_at?: string | null
+          responded_by?: string | null
+          reviewer_email?: string | null
+          reviewer_name: string
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          admin_response?: string | null
+          comment?: string | null
+          created_at?: string | null
+          customer_id?: string | null
+          id?: string
+          is_verified_purchase?: boolean | null
+          product_id?: string
+          rating?: number
+          responded_at?: string | null
+          responded_by?: string | null
+          reviewer_email?: string | null
+          reviewer_name?: string
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_responded_by_fkey"
+            columns: ["responded_by"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       saved_list_items: {
         Row: {
           created_at: string
@@ -1314,6 +1394,34 @@ export type Database = {
       }
     }
     Views: {
+      product_review_stats: {
+        Row: {
+          avg_rating: number | null
+          five_star: number | null
+          four_star: number | null
+          one_star: number | null
+          product_id: string | null
+          review_count: number | null
+          three_star: number | null
+          two_star: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products_public: {
         Row: {
           brand_id: string | null
