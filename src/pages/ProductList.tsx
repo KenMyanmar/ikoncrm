@@ -102,6 +102,7 @@ export default function ProductList() {
                   <TableHead className="w-12"></TableHead>
                   <TableHead>Code</TableHead>
                   <TableHead className="min-w-[200px]">Description</TableHead>
+                  <TableHead>Category</TableHead>
                   <TableHead>Price</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Completeness</TableHead>
@@ -109,15 +110,19 @@ export default function ProductList() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {isLoading && <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Loading…</TableCell></TableRow>}
-                {!isLoading && (data?.products || []).length === 0 && <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">No products found.</TableCell></TableRow>}
-                {(data?.products || []).map((p: any) => (
+                {isLoading && <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Loading…</TableCell></TableRow>}
+                {!isLoading && (data?.products || []).length === 0 && <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">No products found.</TableCell></TableRow>}
+                {(data?.products || []).map((p: any) => {
+                  const cat = p.category_id && catMap ? catMap.get(p.category_id) : null;
+                  const catPath = cat ? (cat.parentName ? `${cat.parentName} > ${cat.name}` : cat.name) : "—";
+                  return (
                   <TableRow key={p.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/products/${p.id}`)}>
                     <TableCell>
                       {p.thumbnail_url ? <img src={p.thumbnail_url} className="h-8 w-8 rounded object-cover" alt="" /> : <div className="h-8 w-8 rounded bg-muted" />}
                     </TableCell>
                     <TableCell className="font-mono text-xs">{p.stock_code}</TableCell>
                     <TableCell className="text-sm truncate max-w-[300px]">{p.description}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground max-w-[180px] truncate">{catPath}</TableCell>
                     <TableCell className="text-sm">{p.selling_price ? `${p.selling_price.toLocaleString()} ${p.currency}` : "—"}</TableCell>
                     <TableCell><Badge variant="secondary" className={`text-[10px] ${statusColor(p.stock_status)}`}>{p.stock_status.replace("_", " ")}</Badge></TableCell>
                     <TableCell>
