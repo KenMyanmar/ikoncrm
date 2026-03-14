@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Lock, Eye, EyeOff, CheckCircle, AlertCircle, Loader2, ShieldCheck, Check, X } from "lucide-react";
+import { Eye, EyeOff, CheckCircle, AlertCircle, Loader2, ShieldCheck, Check, X } from "lucide-react";
 import ikonLogo from "@/assets/ikon-logo.png";
 
 type Status = "loading" | "ready" | "success" | "error";
