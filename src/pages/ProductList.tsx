@@ -133,7 +133,8 @@ export default function ProductList() {
                     </TableCell>
                     <TableCell><Edit className="h-4 w-4 text-muted-foreground" /></TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
           </div>
