@@ -113,6 +113,7 @@ export default function ProductEdit() {
           reorder_qty: form.reorder_qty ? Number(form.reorder_qty) : 0,
           specifications: specsObj,
           datasheet_url: form.datasheet_url,
+          features: form.features || null,
           thumbnail_url: form.thumbnail_url,
           images: Array.isArray(form.images) ? form.images : [],
           is_featured: form.is_featured,
