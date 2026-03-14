@@ -29,6 +29,7 @@ import MyDeliveries from "@/pages/MyDeliveries";
 import Promotions from "@/pages/Promotions";
 import FlashDeals from "@/pages/FlashDeals";
 import Coupons from "@/pages/Coupons";
+import ReviewList from "@/pages/ReviewList";
 import ResetPassword from "@/pages/ResetPassword";
 import NotFound from "@/pages/NotFound";
 
