@@ -47,9 +47,13 @@ export default function ProductEdit() {
   });
 
   const { data: categories } = useQuery({
-    queryKey: ["categories-list"],
+    queryKey: ["categories-list-hierarchy"],
     queryFn: async () => {
-      const { data } = await supabase.from("categories").select("id, name").order("name");
+      const { data } = await supabase
+        .from("categories")
+        .select("id, name, depth, parent_id")
+        .eq("is_active", true)
+        .order("sort_order");
       return data || [];
     },
   });
