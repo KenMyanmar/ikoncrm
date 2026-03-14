@@ -1320,13 +1320,16 @@ export type Database = {
           brand_logo: string | null
           brand_name: string | null
           brand_slug: string | null
+          category_depth: number | null
           category_id: string | null
           category_name: string | null
+          category_parent_id: string | null
           category_slug: string | null
           created_at: string | null
           currency: string | null
           datasheet_url: string | null
           description: string | null
+          features: string | null
           group_code: string | null
           group_id: string | null
           group_name: string | null
@@ -1335,6 +1338,7 @@ export type Database = {
           is_active: boolean | null
           is_featured: boolean | null
           item_type: string | null
+          long_description: string | null
           main_vendor: string | null
           max_qty: number | null
           min_qty: number | null
@@ -1342,6 +1346,8 @@ export type Database = {
           onhand_qty: number | null
           other_code: string | null
           packing: string | null
+          parent_category_name: string | null
+          parent_category_slug: string | null
           reorder_qty: number | null
           search_vector: unknown
           selling_price: number | null
@@ -1350,11 +1356,19 @@ export type Database = {
           specifications: Json | null
           stock_code: string | null
           stock_status: string | null
+          tags: string[] | null
           thumbnail_url: string | null
           unit_of_measure: string | null
           updated_at: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "categories_parent_id_fkey"
+            columns: ["category_parent_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "products_brand_id_fkey"
             columns: ["brand_id"]
@@ -1382,13 +1396,13 @@ export type Database = {
     Functions: {
       bulk_update_product: {
         Args: {
-          p_long_description?: string
-          p_selling_price?: number
-          p_short_description?: string
-          p_specifications?: Json
+          p_long_description: string
+          p_selling_price: number
+          p_short_description: string
+          p_specifications: Json
           p_stock_code: string
-          p_subcategory_name?: string
-          p_unit_of_measure?: string
+          p_subcategory_name: string
+          p_unit_of_measure: string
         }
         Returns: string
       }
