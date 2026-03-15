@@ -293,6 +293,11 @@ export default function OrderDetail() {
             </CardContent>
           </Card>
 
+          {/* Delivery Tracking */}
+          {["out_for_delivery", "delivered"].includes(order.status) && (
+            <DeliveryTrackingCard orderId={id!} />
+          )}
+
           {/* SLA Performance */}
           {slaEntries && slaEntries.length > 0 && (
             <Card>
