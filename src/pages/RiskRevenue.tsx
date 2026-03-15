@@ -54,7 +54,7 @@ const _FRAUD_FLAGS = [
 
 export default function RiskRevenue() {
   const { staff } = useStaff();
-  const qc = useQueryClient();
+  const _qc = useQueryClient();
   const role = staff?.role || "viewer";
   const canApprove = ["manager", "admin", "super_admin"].includes(role);
   const canApproveHigh = ["admin", "super_admin"].includes(role);

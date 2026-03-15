@@ -139,3 +139,84 @@ export default function CustomerDetail() {
     </div>
   );
 }
+
+const RISK_TIER_COLORS: Record<string, string> = {
+  low: "text-green-600 bg-green-50",
+  normal: "text-amber-600 bg-amber-50",
+  elevated: "text-red-600 bg-red-50",
+  high: "text-red-800 bg-red-100",
+};
+
+const FRAUD_FLAG_OPTIONS = [
+  { value: "suspicious_activity", label: "Suspicious activity" },
+  { value: "repeat_cod_failures", label: "Repeat COD failures" },
+  { value: "address_inconsistency", label: "Address inconsistency" },
+  { value: "payment_fraud", label: "Payment fraud" },
+  { value: "abusive_returns", label: "Abusive returns" },
+];
+
+function RiskProfileCard({ customer, customerId, staffId }: { customer: any; customerId: string; staffId?: string }) {
+  const qc = useQueryClient();
+  const existingFlags = (customer.fraud_flags || []) as string[];
+  const codSuccess = customer.total_cod_orders ? Math.round((customer.total_cod_delivered || 0) / customer.total_cod_orders * 100) : 100;
+
+  const flagMut = useMutation({
+    mutationFn: async (flag: string) => {
+      const newFlags = existingFlags.includes(flag) ? existingFlags.filter(f => f !== flag) : [...existingFlags, flag];
+      const { error } = await supabase.from("customers").update({ fraud_flags: newFlags }).eq("id", customerId);
+      if (error) throw error;
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-customer", customerId] }); toast.success("Fraud flags updated"); },
+  });
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-sm flex items-center gap-1.5"><Shield className="h-4 w-4" /> Risk Profile</CardTitle>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" variant="outline" className="h-7 text-xs"><Flag className="h-3 w-3 mr-1" /> Flag</Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              {FRAUD_FLAG_OPTIONS.map(f => (
+                <DropdownMenuItem key={f.value} onClick={() => flagMut.mutate(f.value)}>
+                  {existingFlags.includes(f.value) ? "✓ " : ""}{f.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </CardHeader>
+      <CardContent className="text-sm space-y-2">
+        <div className="flex items-center justify-between">
+          <span className="text-muted-foreground text-xs">Risk Tier</span>
+          <Badge variant="outline" className={RISK_TIER_COLORS[customer.risk_tier] || ""}>{customer.risk_tier || "normal"}</Badge>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-muted-foreground text-xs">COD Orders</span>
+          <span className="text-xs">{customer.total_cod_orders || 0}</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-muted-foreground text-xs">COD Success Rate</span>
+          <span className={`text-xs font-medium ${codSuccess < 50 ? "text-destructive" : ""}`}>{codSuccess}%</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-muted-foreground text-xs">Failed Deliveries</span>
+          <span className="text-xs">{customer.total_failed_deliveries || 0}</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-muted-foreground text-xs">Cancellations</span>
+          <span className="text-xs">{customer.total_cancelled_orders || 0}</span>
+        </div>
+        {existingFlags.length > 0 && (
+          <div className="pt-1 flex flex-wrap gap-1">
+            {existingFlags.map(f => (
+              <Badge key={f} variant="destructive" className="text-[9px]">{FRAUD_FLAG_OPTIONS.find(o => o.value === f)?.label || f}</Badge>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
