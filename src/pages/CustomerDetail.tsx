@@ -155,7 +155,7 @@ const FRAUD_FLAG_OPTIONS = [
   { value: "abusive_returns", label: "Abusive returns" },
 ];
 
-function RiskProfileCard({ customer, customerId, staffId }: { customer: any; customerId: string; staffId?: string }) {
+function RiskProfileCard({ customer, customerId }: { customer: any; customerId: string }) {
   const qc = useQueryClient();
   const existingFlags = (customer.fraud_flags || []) as string[];
   const codSuccess = customer.total_cod_orders ? Math.round((customer.total_cod_delivered || 0) / customer.total_cod_orders * 100) : 100;
