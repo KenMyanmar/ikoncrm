@@ -135,6 +135,11 @@ export function AdminSidebar() {
                                 {orderBadge}
                               </span>
                             )}
+                            {"badgeKey" in item && item.badgeKey === "tasks" && taskBadge > 0 && (
+                              <span className="ml-auto bg-sidebar-primary text-sidebar-primary-foreground text-[9px] font-bold rounded-full h-4 min-w-[16px] flex items-center justify-center px-1">
+                                {taskBadge}
+                              </span>
+                            )}
                           </span>
                         )}
                       </NavLink>
