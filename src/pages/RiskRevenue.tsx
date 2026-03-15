@@ -551,7 +551,7 @@ function CodAnalyticsTab() {
     },
   });
 
-  const successRate = data?.total ? Math.round((data.delivered / data.total) * 100) : 0;
+  const _successRate = data?.total ? Math.round((data.delivered / data.total) * 100) : 0;
 
   return (
     <div className="space-y-4">

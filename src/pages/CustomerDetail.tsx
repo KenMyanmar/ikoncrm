@@ -86,7 +86,7 @@ export default function CustomerDetail() {
           </Card>
 
           {/* Risk Profile Card */}
-          <RiskProfileCard customer={customer} customerId={id!} staffId={staff?.id} />
+          <RiskProfileCard customer={customer} customerId={id!} />
         </div>
 
         <div className="lg:col-span-2">
