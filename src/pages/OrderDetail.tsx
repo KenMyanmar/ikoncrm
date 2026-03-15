@@ -21,6 +21,7 @@ import { OrderEditItemsDialog } from "@/components/orders/OrderEditItemsDialog";
 import { ApplyDiscountDialog } from "@/components/orders/ApplyDiscountDialog";
 import { CommunicationLog } from "@/components/orders/CommunicationLog";
 import { SendMessageDialog } from "@/components/orders/SendMessageDialog";
+import { DeliveryTrackingCard } from "@/components/orders/DeliveryTrackingCard";
 
 const EDITABLE_STATUSES = ["confirmed_cod", "awaiting_payment_proof", "payment_under_review", "paid"];
 
