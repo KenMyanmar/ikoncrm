@@ -326,6 +326,82 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Customer Widgets */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <TopCustomersWidget />
+        <AtRiskCustomersWidget />
+      </div>
     </div>
+  );
+}
+
+function TopCustomersWidget() {
+  const navigate = useNavigate();
+  const { data: top } = useQuery({
+    queryKey: ["top-customers"],
+    queryFn: async () => {
+      const { data } = await supabase.from("customer_metrics").select("customer_id, name, company_name, lifetime_value, total_orders")
+        .order("lifetime_value", { ascending: false }).limit(5);
+      return (data || []) as any[];
+    },
+  });
+
+  return (
+    <Card>
+      <CardHeader className="pb-2"><CardTitle className="text-sm">Top Customers (by LTV)</CardTitle></CardHeader>
+      <CardContent>
+        <div className="space-y-2">
+          {(top || []).map((c: any, i: number) => (
+            <div key={c.customer_id} className="flex items-center justify-between text-sm cursor-pointer hover:bg-muted/50 rounded p-1.5 -mx-1.5" onClick={() => navigate(`/customers/${c.customer_id}`)}>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground w-4">{i + 1}.</span>
+                <span className="font-medium">{c.company_name || c.name || "—"}</span>
+              </div>
+              <div className="text-right">
+                <span className="text-xs font-medium">{fmt(Number(c.lifetime_value) || 0)} MMK</span>
+                <span className="text-xs text-muted-foreground ml-2">({c.total_orders || 0} orders)</span>
+              </div>
+            </div>
+          ))}
+          {(!top || top.length === 0) && <p className="text-xs text-muted-foreground text-center py-4">No customer data yet</p>}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function AtRiskCustomersWidget() {
+  const navigate = useNavigate();
+  const { data: atRisk } = useQuery({
+    queryKey: ["at-risk-customers"],
+    queryFn: async () => {
+      const { data } = await supabase.from("customer_metrics").select("customer_id, name, company_name, recency_days, last_order_date")
+        .gt("recency_days", 60).gt("total_orders", 0)
+        .order("recency_days", { ascending: false }).limit(5);
+      return (data || []) as any[];
+    },
+  });
+
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-sm">At Risk Customers</CardTitle>
+          <Button variant="link" size="sm" className="text-xs h-auto p-0" onClick={() => navigate("/customers")}>View All →</Button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-2">
+          {(atRisk || []).map((c: any) => (
+            <div key={c.customer_id} className="flex items-center justify-between text-sm cursor-pointer hover:bg-muted/50 rounded p-1.5 -mx-1.5" onClick={() => navigate(`/customers/${c.customer_id}`)}>
+              <span className="font-medium">{c.company_name || c.name || "—"}</span>
+              <span className="text-xs text-destructive">Last order: {c.recency_days}d ago</span>
+            </div>
+          ))}
+          {(!atRisk || atRisk.length === 0) && <p className="text-xs text-muted-foreground text-center py-4">No at-risk customers 🎉</p>}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
