@@ -67,22 +67,27 @@ export default function CustomerDetail() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader><CardTitle className="text-sm">Profile</CardTitle></CardHeader>
-          <CardContent className="text-sm space-y-3">
-            <div><Label className="text-xs text-muted-foreground">Name</Label><p>{customer.name || "—"}</p></div>
-            <div><Label className="text-xs text-muted-foreground">Company</Label><p>{customer.company_name || "—"}</p></div>
-            <div><Label className="text-xs text-muted-foreground">Email</Label><p>{customer.email || "—"}</p></div>
-            <div><Label className="text-xs text-muted-foreground">Phone</Label><p>{customer.phone || "—"}</p></div>
-            <div><Label className="text-xs text-muted-foreground">Type</Label><Badge variant="outline">{customer.customer_type}</Badge></div>
-            <div><Label className="text-xs text-muted-foreground">Payment Terms</Label><p>{customer.payment_terms}</p></div>
-            <div><Label className="text-xs text-muted-foreground">Credit Limit</Label><p>{Number(customer.credit_limit).toLocaleString()}</p></div>
-            <div className="flex items-center gap-2 pt-2">
-              <Switch checked={customer.is_approved_buyer} onCheckedChange={v => approveMutation.mutate(v)} />
-              <Label>Approved Buyer</Label>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="space-y-4">
+          <Card>
+            <CardHeader><CardTitle className="text-sm">Profile</CardTitle></CardHeader>
+            <CardContent className="text-sm space-y-3">
+              <div><Label className="text-xs text-muted-foreground">Name</Label><p>{customer.name || "—"}</p></div>
+              <div><Label className="text-xs text-muted-foreground">Company</Label><p>{customer.company_name || "—"}</p></div>
+              <div><Label className="text-xs text-muted-foreground">Email</Label><p>{customer.email || "—"}</p></div>
+              <div><Label className="text-xs text-muted-foreground">Phone</Label><p>{customer.phone || "—"}</p></div>
+              <div><Label className="text-xs text-muted-foreground">Type</Label><Badge variant="outline">{customer.customer_type}</Badge></div>
+              <div><Label className="text-xs text-muted-foreground">Payment Terms</Label><p>{customer.payment_terms}</p></div>
+              <div><Label className="text-xs text-muted-foreground">Credit Limit</Label><p>{Number(customer.credit_limit).toLocaleString()}</p></div>
+              <div className="flex items-center gap-2 pt-2">
+                <Switch checked={customer.is_approved_buyer} onCheckedChange={v => approveMutation.mutate(v)} />
+                <Label>Approved Buyer</Label>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Risk Profile Card */}
+          <RiskProfileCard customer={customer} customerId={id!} staffId={staff?.id} />
+        </div>
 
         <div className="lg:col-span-2">
           <Tabs defaultValue="orders">
