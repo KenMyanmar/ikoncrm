@@ -22,7 +22,7 @@ export function OrderKanbanCard({
   order,
   itemCount,
   sla,
-  columnKey,
+  columnKey: _columnKey,
   onMarkPacked,
   onMarkDelivered,
   onReviewPayment,

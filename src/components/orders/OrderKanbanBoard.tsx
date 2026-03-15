@@ -37,7 +37,7 @@ export function OrderKanbanBoard({
     today.setHours(0, 0, 0, 0);
 
     return KANBAN_COLUMNS.map((col) => {
-      let filtered = orders.filter((o) => col.statuses.includes(o.status));
+      let filtered = orders.filter((o: any) => (col.statuses as readonly string[]).includes(o.status));
       // Done column: only today's deliveries
       if (col.key === "done") {
         filtered = filtered.filter((o) => o.delivered_at && new Date(o.delivered_at) >= today);
