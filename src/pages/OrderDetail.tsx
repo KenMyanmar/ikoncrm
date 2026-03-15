@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { ArrowLeft, CheckCircle, XCircle, Package, Truck, Printer, AlertTriangle, Clock, Shield, Edit, Percent, Lock } from "lucide-react";
+import { ArrowLeft, CheckCircle, XCircle, Package, Truck, Printer, AlertTriangle, Clock, Shield, Edit, Percent, Lock, Send, Mail } from "lucide-react";
 import { useState } from "react";
 import { STATUS_LABELS, STATUS_COLORS, PAYMENT_STATUS_COLORS, PAYMENT_METHOD_LABELS, RISK_FLAG_LABELS, formatRelativeTime } from "@/components/orders/orderConstants";
 import { OrderStatusTimeline } from "@/components/orders/OrderStatusTimeline";
