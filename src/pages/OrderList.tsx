@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Package, Clock, Truck, CheckCircle, XCircle, Eye, Printer, ShoppingCart, AlertTriangle } from "lucide-react";
+import { Search, Package, Truck, CheckCircle, XCircle, Eye, Printer, ShoppingCart, AlertTriangle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { STATUS_LABELS, STATUS_COLORS, PAYMENT_STATUS_COLORS, PAYMENT_METHOD_LABELS, TAB_STATUS_MAP, formatRelativeTime } from "@/components/orders/orderConstants";
