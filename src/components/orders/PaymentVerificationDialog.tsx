@@ -15,6 +15,39 @@ import { toast } from "sonner";
 import { CheckCircle, XCircle, ZoomIn } from "lucide-react";
 import { PAYMENT_METHOD_LABELS, formatRelativeTime } from "./orderConstants";
 
+async function autoSendTemplate(triggerStatus: string, order: any, staff: any, sb: typeof supabase) {
+  try {
+    const { data: template } = await sb
+      .from("communication_templates")
+      .select("*")
+      .eq("trigger_status", triggerStatus)
+      .eq("is_auto", true)
+      .eq("is_active", true)
+      .single();
+    if (!template || !order.customer_id) return;
+    const vars: Record<string, string> = {
+      customer_name: order.customers?.name || order.customers?.company_name || "Customer",
+      order_number: order.order_number || "",
+      total: Number(order.total || 0).toLocaleString(),
+      payment_method: PAYMENT_METHOD_LABELS[order.payment_method] || order.payment_method || "",
+      rejection_reason: order.payment_rejection_reason || "",
+    };
+    await sb.from("customer_communications").insert({
+      customer_id: order.customer_id,
+      order_id: order.id,
+      channel: template.channel,
+      direction: "outbound",
+      subject: resolveTemplate(template.subject_template || "", vars),
+      body: resolveTemplate(template.body_template, vars),
+      template_key: template.template_key,
+      status: "sent",
+      sent_by: staff?.id,
+    } as any);
+  } catch {
+    // Auto-send is best-effort
+  }
+}
+
 interface PaymentVerificationDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
