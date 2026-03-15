@@ -91,7 +91,6 @@ export default function CustomerList() {
 
   const stats = useMemo(() => {
     const all = customers || [];
-    const now = Date.now();
     const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).getTime();
     return {
       total: all.length,

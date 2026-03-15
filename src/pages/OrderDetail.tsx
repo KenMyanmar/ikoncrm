@@ -265,15 +265,7 @@ export default function OrderDetail() {
         {/* Right Column */}
         <div className="space-y-4">
           {/* Customer */}
-          <Card>
-            <CardHeader><CardTitle className="text-sm">Customer</CardTitle></CardHeader>
-            <CardContent className="text-sm space-y-1">
-              <p className="font-medium">{(order as any).customers?.company_name || (order as any).customers?.name || "—"}</p>
-              <p className="text-muted-foreground">{(order as any).customers?.email}</p>
-              <p className="text-muted-foreground">{(order as any).customers?.phone}</p>
-              {order.contact_name && <p className="text-xs mt-2"><span className="text-muted-foreground">Contact:</span> {order.contact_name} {order.contact_phone && `· ${order.contact_phone}`}</p>}
-            </CardContent>
-          </Card>
+          <CustomerInsightCard order={order} navigate={navigate} />
 
           {/* Delivery Address */}
           <Card>
