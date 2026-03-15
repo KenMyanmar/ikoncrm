@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import {
   LayoutDashboard, Package, Grid3X3, Tag, ShoppingCart, FileText,
   Users, Image, UserCog, BarChart3, Activity, Settings, LogOut, Truck,
-  Percent, Zap, Ticket, MessageSquare,
+  Percent, Zap, Ticket, MessageSquare, Shield,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useStaff, hasPermission } from "@/contexts/StaffContext";
@@ -60,6 +60,7 @@ const navGroups = [
     label: "System",
     items: [
       { title: "Staff", url: "/staff", icon: UserCog, module: "staff" },
+      { title: "Risk & Revenue", url: "/risk", icon: Shield, module: "reports" },
       { title: "Reports", url: "/reports", icon: BarChart3, module: "reports" },
       { title: "Activity Log", url: "/activity", icon: Activity, module: "activity" },
       { title: "Settings", url: "/settings", icon: Settings, module: "settings" },

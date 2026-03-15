@@ -6,13 +6,13 @@ import { logActivity } from "@/lib/activity";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Flag, Shield } from "lucide-react";
 
 export default function CustomerDetail() {
   const { id } = useParams<{ id: string }>();
@@ -67,22 +67,27 @@ export default function CustomerDetail() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader><CardTitle className="text-sm">Profile</CardTitle></CardHeader>
-          <CardContent className="text-sm space-y-3">
-            <div><Label className="text-xs text-muted-foreground">Name</Label><p>{customer.name || "—"}</p></div>
-            <div><Label className="text-xs text-muted-foreground">Company</Label><p>{customer.company_name || "—"}</p></div>
-            <div><Label className="text-xs text-muted-foreground">Email</Label><p>{customer.email || "—"}</p></div>
-            <div><Label className="text-xs text-muted-foreground">Phone</Label><p>{customer.phone || "—"}</p></div>
-            <div><Label className="text-xs text-muted-foreground">Type</Label><Badge variant="outline">{customer.customer_type}</Badge></div>
-            <div><Label className="text-xs text-muted-foreground">Payment Terms</Label><p>{customer.payment_terms}</p></div>
-            <div><Label className="text-xs text-muted-foreground">Credit Limit</Label><p>{Number(customer.credit_limit).toLocaleString()}</p></div>
-            <div className="flex items-center gap-2 pt-2">
-              <Switch checked={customer.is_approved_buyer} onCheckedChange={v => approveMutation.mutate(v)} />
-              <Label>Approved Buyer</Label>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="space-y-4">
+          <Card>
+            <CardHeader><CardTitle className="text-sm">Profile</CardTitle></CardHeader>
+            <CardContent className="text-sm space-y-3">
+              <div><Label className="text-xs text-muted-foreground">Name</Label><p>{customer.name || "—"}</p></div>
+              <div><Label className="text-xs text-muted-foreground">Company</Label><p>{customer.company_name || "—"}</p></div>
+              <div><Label className="text-xs text-muted-foreground">Email</Label><p>{customer.email || "—"}</p></div>
+              <div><Label className="text-xs text-muted-foreground">Phone</Label><p>{customer.phone || "—"}</p></div>
+              <div><Label className="text-xs text-muted-foreground">Type</Label><Badge variant="outline">{customer.customer_type}</Badge></div>
+              <div><Label className="text-xs text-muted-foreground">Payment Terms</Label><p>{customer.payment_terms}</p></div>
+              <div><Label className="text-xs text-muted-foreground">Credit Limit</Label><p>{Number(customer.credit_limit).toLocaleString()}</p></div>
+              <div className="flex items-center gap-2 pt-2">
+                <Switch checked={customer.is_approved_buyer} onCheckedChange={v => approveMutation.mutate(v)} />
+                <Label>Approved Buyer</Label>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Risk Profile Card */}
+          <RiskProfileCard customer={customer} customerId={id!} />
+        </div>
 
         <div className="lg:col-span-2">
           <Tabs defaultValue="orders">
@@ -132,5 +137,86 @@ export default function CustomerDetail() {
         </div>
       </div>
     </div>
+  );
+}
+
+const RISK_TIER_COLORS: Record<string, string> = {
+  low: "text-green-600 bg-green-50",
+  normal: "text-amber-600 bg-amber-50",
+  elevated: "text-red-600 bg-red-50",
+  high: "text-red-800 bg-red-100",
+};
+
+const FRAUD_FLAG_OPTIONS = [
+  { value: "suspicious_activity", label: "Suspicious activity" },
+  { value: "repeat_cod_failures", label: "Repeat COD failures" },
+  { value: "address_inconsistency", label: "Address inconsistency" },
+  { value: "payment_fraud", label: "Payment fraud" },
+  { value: "abusive_returns", label: "Abusive returns" },
+];
+
+function RiskProfileCard({ customer, customerId }: { customer: any; customerId: string }) {
+  const qc = useQueryClient();
+  const existingFlags = (customer.fraud_flags || []) as string[];
+  const codSuccess = customer.total_cod_orders ? Math.round((customer.total_cod_delivered || 0) / customer.total_cod_orders * 100) : 100;
+
+  const flagMut = useMutation({
+    mutationFn: async (flag: string) => {
+      const newFlags = existingFlags.includes(flag) ? existingFlags.filter(f => f !== flag) : [...existingFlags, flag];
+      const { error } = await supabase.from("customers").update({ fraud_flags: newFlags }).eq("id", customerId);
+      if (error) throw error;
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-customer", customerId] }); toast.success("Fraud flags updated"); },
+  });
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-sm flex items-center gap-1.5"><Shield className="h-4 w-4" /> Risk Profile</CardTitle>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" variant="outline" className="h-7 text-xs"><Flag className="h-3 w-3 mr-1" /> Flag</Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              {FRAUD_FLAG_OPTIONS.map(f => (
+                <DropdownMenuItem key={f.value} onClick={() => flagMut.mutate(f.value)}>
+                  {existingFlags.includes(f.value) ? "✓ " : ""}{f.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </CardHeader>
+      <CardContent className="text-sm space-y-2">
+        <div className="flex items-center justify-between">
+          <span className="text-muted-foreground text-xs">Risk Tier</span>
+          <Badge variant="outline" className={RISK_TIER_COLORS[customer.risk_tier] || ""}>{customer.risk_tier || "normal"}</Badge>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-muted-foreground text-xs">COD Orders</span>
+          <span className="text-xs">{customer.total_cod_orders || 0}</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-muted-foreground text-xs">COD Success Rate</span>
+          <span className={`text-xs font-medium ${codSuccess < 50 ? "text-destructive" : ""}`}>{codSuccess}%</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-muted-foreground text-xs">Failed Deliveries</span>
+          <span className="text-xs">{customer.total_failed_deliveries || 0}</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-muted-foreground text-xs">Cancellations</span>
+          <span className="text-xs">{customer.total_cancelled_orders || 0}</span>
+        </div>
+        {existingFlags.length > 0 && (
+          <div className="pt-1 flex flex-wrap gap-1">
+            {existingFlags.map(f => (
+              <Badge key={f} variant="destructive" className="text-[9px]">{FRAUD_FLAG_OPTIONS.find(o => o.value === f)?.label || f}</Badge>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }

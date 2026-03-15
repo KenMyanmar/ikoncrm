@@ -32,6 +32,7 @@ import Coupons from "@/pages/Coupons";
 import ReviewList from "@/pages/ReviewList";
 import ResetPassword from "@/pages/ResetPassword";
 import CreateOrder from "@/pages/CreateOrder";
+import RiskRevenue from "@/pages/RiskRevenue";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -71,6 +72,7 @@ const App = () => (
                 <Route path="flash-deals" element={<ProtectedRoute module="flash_deals"><FlashDeals /></ProtectedRoute>} />
                 <Route path="coupons" element={<ProtectedRoute module="coupons"><Coupons /></ProtectedRoute>} />
                 <Route path="reviews" element={<ProtectedRoute module="reviews"><ReviewList /></ProtectedRoute>} />
+                <Route path="risk" element={<ProtectedRoute module="reports"><RiskRevenue /></ProtectedRoute>} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
