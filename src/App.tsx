@@ -33,6 +33,8 @@ import ReviewList from "@/pages/ReviewList";
 import ResetPassword from "@/pages/ResetPassword";
 import CreateOrder from "@/pages/CreateOrder";
 import RiskRevenue from "@/pages/RiskRevenue";
+import Automations from "@/pages/Automations";
+import CrmTasks from "@/pages/CrmTasks";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
