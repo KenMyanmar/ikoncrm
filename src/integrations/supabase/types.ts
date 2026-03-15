@@ -520,6 +520,48 @@ export type Database = {
           },
         ]
       }
+      delivery_fees: {
+        Row: {
+          cod_eligible: boolean | null
+          created_at: string | null
+          estimated_days: string | null
+          fee: number
+          id: string
+          is_active: boolean | null
+          label: string
+          max_cod_amount: number | null
+          min_free_delivery: number | null
+          sort_order: number | null
+          zone: string
+        }
+        Insert: {
+          cod_eligible?: boolean | null
+          created_at?: string | null
+          estimated_days?: string | null
+          fee?: number
+          id?: string
+          is_active?: boolean | null
+          label: string
+          max_cod_amount?: number | null
+          min_free_delivery?: number | null
+          sort_order?: number | null
+          zone: string
+        }
+        Update: {
+          cod_eligible?: boolean | null
+          created_at?: string | null
+          estimated_days?: string | null
+          fee?: number
+          id?: string
+          is_active?: boolean | null
+          label?: string
+          max_cod_amount?: number | null
+          min_free_delivery?: number | null
+          sort_order?: number | null
+          zone?: string
+        }
+        Relationships: []
+      }
       flash_deals: {
         Row: {
           badge_text: string | null
@@ -647,25 +689,82 @@ export type Database = {
           },
         ]
       }
+      order_status_history: {
+        Row: {
+          changed_by: string | null
+          changed_by_role: string | null
+          created_at: string | null
+          from_status: string | null
+          id: string
+          metadata: Json | null
+          order_id: string
+          reason: string | null
+          to_status: string
+        }
+        Insert: {
+          changed_by?: string | null
+          changed_by_role?: string | null
+          created_at?: string | null
+          from_status?: string | null
+          id?: string
+          metadata?: Json | null
+          order_id: string
+          reason?: string | null
+          to_status: string
+        }
+        Update: {
+          changed_by?: string | null
+          changed_by_role?: string | null
+          created_at?: string | null
+          from_status?: string | null
+          id?: string
+          metadata?: Json | null
+          order_id?: string
+          reason?: string | null
+          to_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_status_history_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       orders: {
         Row: {
           assigned_to: string | null
+          cancelled_by: string | null
+          cancelled_reason: string | null
+          contact_name: string | null
+          contact_phone: string | null
           created_at: string
           currency: string
           customer_id: string | null
           customer_notes: string | null
+          delivered_at: string | null
           delivery_address_id: string | null
           delivery_method: string | null
+          delivery_zone: string | null
           discount: number
           estimated_delivery: string | null
           id: string
+          idempotency_key: string | null
           internal_notes: string | null
           order_number: string
+          packed_at: string | null
           payment_method: string | null
+          payment_proof_url: string | null
           payment_reference: string | null
+          payment_rejection_reason: string | null
           payment_status: string
+          payment_verified_at: string | null
+          payment_verified_by: string | null
           priority: string
           purchase_order_number: string | null
+          shipped_at: string | null
           shipping_cost: number
           source: string | null
           status: string
@@ -677,22 +776,35 @@ export type Database = {
         }
         Insert: {
           assigned_to?: string | null
+          cancelled_by?: string | null
+          cancelled_reason?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
           created_at?: string
           currency?: string
           customer_id?: string | null
           customer_notes?: string | null
+          delivered_at?: string | null
           delivery_address_id?: string | null
           delivery_method?: string | null
+          delivery_zone?: string | null
           discount?: number
           estimated_delivery?: string | null
           id?: string
+          idempotency_key?: string | null
           internal_notes?: string | null
           order_number?: string
+          packed_at?: string | null
           payment_method?: string | null
+          payment_proof_url?: string | null
           payment_reference?: string | null
+          payment_rejection_reason?: string | null
           payment_status?: string
+          payment_verified_at?: string | null
+          payment_verified_by?: string | null
           priority?: string
           purchase_order_number?: string | null
+          shipped_at?: string | null
           shipping_cost?: number
           source?: string | null
           status?: string
@@ -704,22 +816,35 @@ export type Database = {
         }
         Update: {
           assigned_to?: string | null
+          cancelled_by?: string | null
+          cancelled_reason?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
           created_at?: string
           currency?: string
           customer_id?: string | null
           customer_notes?: string | null
+          delivered_at?: string | null
           delivery_address_id?: string | null
           delivery_method?: string | null
+          delivery_zone?: string | null
           discount?: number
           estimated_delivery?: string | null
           id?: string
+          idempotency_key?: string | null
           internal_notes?: string | null
           order_number?: string
+          packed_at?: string | null
           payment_method?: string | null
+          payment_proof_url?: string | null
           payment_reference?: string | null
+          payment_rejection_reason?: string | null
           payment_status?: string
+          payment_verified_at?: string | null
+          payment_verified_by?: string | null
           priority?: string
           purchase_order_number?: string | null
+          shipped_at?: string | null
           shipping_cost?: number
           source?: string | null
           status?: string
@@ -749,6 +874,13 @@ export type Database = {
             columns: ["delivery_address_id"]
             isOneToOne: false
             referencedRelation: "customer_addresses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_payment_verified_by_fkey"
+            columns: ["payment_verified_by"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1524,6 +1656,22 @@ export type Database = {
       get_staff_role: { Args: { _user_id: string }; Returns: string }
       get_staff_role_level: { Args: never; Returns: number }
       is_staff: { Args: { _user_id: string }; Returns: boolean }
+      place_order: {
+        Args: {
+          p_contact_name: string
+          p_contact_phone: string
+          p_coupon_code?: string
+          p_customer_id: string
+          p_customer_notes?: string
+          p_delivery_address_id: string
+          p_delivery_zone: string
+          p_idempotency_key: string
+          p_payment_method: string
+          p_payment_proof_url?: string
+          p_payment_reference?: string
+        }
+        Returns: Json
+      }
       search_products: {
         Args: { result_limit?: number; search_term: string }
         Returns: {
