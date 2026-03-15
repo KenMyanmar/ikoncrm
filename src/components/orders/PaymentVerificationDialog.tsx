@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { resolveTemplate } from "./templateUtils";
 import { supabase } from "@/integrations/supabase/client";
 import { useStaff } from "@/contexts/StaffContext";
 import { logActivity } from "@/lib/activity";
@@ -13,6 +14,39 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { CheckCircle, XCircle, ZoomIn } from "lucide-react";
 import { PAYMENT_METHOD_LABELS, formatRelativeTime } from "./orderConstants";
+
+async function autoSendTemplate(triggerStatus: string, order: any, staff: any, sb: typeof supabase) {
+  try {
+    const { data: template } = await sb
+      .from("communication_templates")
+      .select("*")
+      .eq("trigger_status", triggerStatus)
+      .eq("is_auto", true)
+      .eq("is_active", true)
+      .single();
+    if (!template || !order.customer_id) return;
+    const vars: Record<string, string> = {
+      customer_name: order.customers?.name || order.customers?.company_name || "Customer",
+      order_number: order.order_number || "",
+      total: Number(order.total || 0).toLocaleString(),
+      payment_method: PAYMENT_METHOD_LABELS[order.payment_method] || order.payment_method || "",
+      rejection_reason: order.payment_rejection_reason || "",
+    };
+    await sb.from("customer_communications").insert({
+      customer_id: order.customer_id,
+      order_id: order.id,
+      channel: template.channel,
+      direction: "outbound",
+      subject: resolveTemplate(template.subject_template || "", vars),
+      body: resolveTemplate(template.body_template, vars),
+      template_key: template.template_key,
+      status: "sent",
+      sent_by: staff?.id,
+    } as any);
+  } catch {
+    // Auto-send is best-effort
+  }
+}
 
 interface PaymentVerificationDialogProps {
   open: boolean;
@@ -55,6 +89,8 @@ export function PaymentVerificationDialog({ open, onOpenChange, order, mode }: P
         reason: `Payment verified by ${staff?.full_name}`,
       } as any);
       if (staff) await logActivity(staff.id, "order_approved_payment", "order", order.id, order.order_number);
+      // Auto-send communication
+      await autoSendTemplate("paid", order, staff, supabase);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
@@ -84,6 +120,8 @@ export function PaymentVerificationDialog({ open, onOpenChange, order, mode }: P
         reason: `Payment rejected: ${reason}`,
       } as any);
       if (staff) await logActivity(staff.id, "order_rejected_payment", "order", order.id, order.order_number, { reason });
+      // Auto-send communication
+      await autoSendTemplate("payment_rejected", order, staff, supabase);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-orders"] });

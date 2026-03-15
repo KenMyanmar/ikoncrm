@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { ArrowLeft, CheckCircle, XCircle, Package, Truck, Printer, AlertTriangle, Clock, Shield, Edit, Percent, Lock } from "lucide-react";
+import { ArrowLeft, CheckCircle, XCircle, Package, Truck, Printer, AlertTriangle, Clock, Shield, Edit, Percent, Lock, Send, Mail } from "lucide-react";
 import { useState } from "react";
 import { STATUS_LABELS, STATUS_COLORS, PAYMENT_STATUS_COLORS, PAYMENT_METHOD_LABELS, RISK_FLAG_LABELS, formatRelativeTime } from "@/components/orders/orderConstants";
 import { OrderStatusTimeline } from "@/components/orders/OrderStatusTimeline";
@@ -19,6 +19,8 @@ import { SlaTimerBadge } from "@/components/orders/SlaTimerBadge";
 import { OrderNotes } from "@/components/orders/OrderNotes";
 import { OrderEditItemsDialog } from "@/components/orders/OrderEditItemsDialog";
 import { ApplyDiscountDialog } from "@/components/orders/ApplyDiscountDialog";
+import { CommunicationLog } from "@/components/orders/CommunicationLog";
+import { SendMessageDialog } from "@/components/orders/SendMessageDialog";
 
 const EDITABLE_STATUSES = ["confirmed_cod", "awaiting_payment_proof", "payment_under_review", "paid"];
 
@@ -33,6 +35,8 @@ export default function OrderDetail() {
   const [editItemsDialog, setEditItemsDialog] = useState(false);
   const [discountDialog, setDiscountDialog] = useState(false);
   const [showPackingSlip, setShowPackingSlip] = useState(searchParams.get("print") === "slip");
+  const [sendMessageDialog, setSendMessageDialog] = useState(false);
+  const [preselectedTemplate, setPreselectedTemplate] = useState("");
 
   const { data: order } = useQuery({
     queryKey: ["admin-order", id],
@@ -142,8 +146,23 @@ export default function OrderDetail() {
             </>
           )}
           {order.status === "out_for_delivery" && (
-            <Button size="sm" className="bg-success hover:bg-success/90 text-success-foreground" onClick={() => markDeliveredMutation.mutate()} disabled={markDeliveredMutation.isPending}>
-              <CheckCircle className="h-4 w-4 mr-1" /> Mark Delivered
+            <>
+              <Button size="sm" className="bg-success hover:bg-success/90 text-success-foreground" onClick={() => markDeliveredMutation.mutate()} disabled={markDeliveredMutation.isPending}>
+                <CheckCircle className="h-4 w-4 mr-1" /> Mark Delivered
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => { setPreselectedTemplate("out_for_delivery"); setSendMessageDialog(true); }}>
+                <Send className="h-4 w-4 mr-1" /> Send Update
+              </Button>
+            </>
+          )}
+          {order.status === "payment_rejected" && (
+            <Button size="sm" variant="outline" onClick={() => { setPreselectedTemplate("payment_rejected"); setSendMessageDialog(true); }}>
+              <Mail className="h-4 w-4 mr-1" /> Notify Customer
+            </Button>
+          )}
+          {order.status === "delivered" && (
+            <Button size="sm" variant="outline" onClick={() => { setPreselectedTemplate("order_delivered"); setSendMessageDialog(true); }}>
+              <Mail className="h-4 w-4 mr-1" /> Send Confirmation
             </Button>
           )}
         </div>
@@ -237,6 +256,9 @@ export default function OrderDetail() {
               <OrderStatusTimeline orderId={id!} />
             </CardContent>
           </Card>
+
+          {/* Communications */}
+          <CommunicationLog orderId={id!} onSendMessage={() => { setPreselectedTemplate(""); setSendMessageDialog(true); }} />
         </div>
 
         {/* Right Column */}
@@ -350,6 +372,7 @@ export default function OrderDetail() {
       <DeliveryAssignDialog open={deliveryDialog} onOpenChange={setDeliveryDialog} order={order} />
       {editItemsDialog && <OrderEditItemsDialog open={editItemsDialog} onOpenChange={setEditItemsDialog} orderId={id!} currentItems={items || []} order={order} />}
       {discountDialog && <ApplyDiscountDialog open={discountDialog} onOpenChange={setDiscountDialog} orderId={id!} order={order} />}
+      <SendMessageDialog open={sendMessageDialog} onOpenChange={setSendMessageDialog} order={order} preselectedTemplate={preselectedTemplate} />
     </div>
   );
 }
