@@ -60,6 +60,7 @@ const navGroups = [
     label: "System",
     items: [
       { title: "Staff", url: "/staff", icon: UserCog, module: "staff" },
+      { title: "Risk & Revenue", url: "/risk", icon: Shield, module: "reports" },
       { title: "Reports", url: "/reports", icon: BarChart3, module: "reports" },
       { title: "Activity Log", url: "/activity", icon: Activity, module: "activity" },
       { title: "Settings", url: "/settings", icon: Settings, module: "settings" },

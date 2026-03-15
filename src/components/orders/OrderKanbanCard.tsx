@@ -80,10 +80,22 @@ export function OrderKanbanCard({
       )}
 
       {/* Risk flags */}
-      {riskScore >= 40 && riskFlags.length > 0 && (
-        <div className="flex items-center gap-1 text-[10px] text-warning">
+      {riskScore >= 60 && (
+        <div className="flex items-center gap-1 text-[10px] text-destructive">
+          <AlertTriangle className="h-3 w-3 animate-pulse" />
+          <span className="font-bold">⛔ HELD — Score {riskScore}</span>
+        </div>
+      )}
+      {riskScore >= 40 && riskScore < 60 && riskFlags.length > 0 && (
+        <div className="flex items-center gap-1 text-[10px] text-destructive">
           <AlertTriangle className="h-3 w-3" />
-          <span className="truncate">{riskFlags.map(f => RISK_FLAG_LABELS[f] || f).join(", ")}</span>
+          <span className="truncate">🔴 {riskFlags.map(f => RISK_FLAG_LABELS[f] || f).join(", ")}</span>
+        </div>
+      )}
+      {riskScore >= 20 && riskScore < 40 && (
+        <div className="flex items-center gap-1 text-[10px] text-amber-600">
+          <AlertTriangle className="h-3 w-3" />
+          <span>🟡 Risk {riskScore}</span>
         </div>
       )}
 
