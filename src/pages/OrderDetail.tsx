@@ -35,6 +35,8 @@ export default function OrderDetail() {
   const [editItemsDialog, setEditItemsDialog] = useState(false);
   const [discountDialog, setDiscountDialog] = useState(false);
   const [showPackingSlip, setShowPackingSlip] = useState(searchParams.get("print") === "slip");
+  const [sendMessageDialog, setSendMessageDialog] = useState(false);
+  const [preselectedTemplate, setPreselectedTemplate] = useState("");
 
   const { data: order } = useQuery({
     queryKey: ["admin-order", id],
