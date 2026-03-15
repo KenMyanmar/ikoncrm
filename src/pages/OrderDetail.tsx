@@ -256,6 +256,9 @@ export default function OrderDetail() {
               <OrderStatusTimeline orderId={id!} />
             </CardContent>
           </Card>
+
+          {/* Communications */}
+          <CommunicationLog orderId={id!} onSendMessage={() => { setPreselectedTemplate(""); setSendMessageDialog(true); }} />
         </div>
 
         {/* Right Column */}
