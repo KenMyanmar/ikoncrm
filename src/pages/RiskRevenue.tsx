@@ -18,7 +18,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { toast } from "sonner";
 import {
   Shield, AlertTriangle, ChevronDown, TrendingDown, DollarSign, Ban,
-  CheckCircle, XCircle, Phone, Pause,
+  CheckCircle, XCircle, Pause,
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
