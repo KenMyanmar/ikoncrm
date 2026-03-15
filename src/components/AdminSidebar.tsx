@@ -15,6 +15,7 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import ikonLogo from "@/assets/ikon-logo.png";
+import { NotificationBell } from "@/components/sidebar/NotificationBell";
 
 const navGroups = [
   {
@@ -153,6 +154,7 @@ export function AdminSidebar() {
                 <p className="text-sm font-medium text-sidebar-foreground truncate">{staff.full_name}</p>
                 <p className="text-[10px] text-sidebar-foreground/50 capitalize">{staff.role.replace("_", " ")}</p>
               </div>
+              <NotificationBell />
               <button onClick={signOut} className="text-sidebar-foreground/50 hover:text-sidebar-foreground" title="Sign out">
                 <LogOut className="h-4 w-4" />
               </button>

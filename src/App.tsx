@@ -31,6 +31,7 @@ import FlashDeals from "@/pages/FlashDeals";
 import Coupons from "@/pages/Coupons";
 import ReviewList from "@/pages/ReviewList";
 import ResetPassword from "@/pages/ResetPassword";
+import CreateOrder from "@/pages/CreateOrder";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -54,6 +55,7 @@ const App = () => (
                 <Route path="categories" element={<ProtectedRoute module="categories"><CategoryList /></ProtectedRoute>} />
                 <Route path="brands" element={<ProtectedRoute module="brands"><BrandList /></ProtectedRoute>} />
                 <Route path="orders" element={<ProtectedRoute module="orders"><OrderList /></ProtectedRoute>} />
+                <Route path="orders/create" element={<ProtectedRoute module="orders"><CreateOrder /></ProtectedRoute>} />
                 <Route path="orders/:id" element={<ProtectedRoute module="orders"><OrderDetail /></ProtectedRoute>} />
                 <Route path="quotes" element={<ProtectedRoute module="quotes"><QuoteList /></ProtectedRoute>} />
                 <Route path="quotes/:id" element={<ProtectedRoute module="quotes"><QuoteDetail /></ProtectedRoute>} />
