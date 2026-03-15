@@ -6,10 +6,9 @@ import { logActivity } from "@/lib/activity";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { ArrowLeft, CheckCircle, XCircle, Package, Truck, Printer, AlertTriangle, Clock, Shield } from "lucide-react";
+import { ArrowLeft, CheckCircle, XCircle, Package, Truck, Printer, AlertTriangle, Clock, Shield, Edit, Percent, Lock } from "lucide-react";
 import { useState } from "react";
 import { STATUS_LABELS, STATUS_COLORS, PAYMENT_STATUS_COLORS, PAYMENT_METHOD_LABELS, RISK_FLAG_LABELS, formatRelativeTime } from "@/components/orders/orderConstants";
 import { OrderStatusTimeline } from "@/components/orders/OrderStatusTimeline";
@@ -17,6 +16,11 @@ import { PaymentVerificationDialog } from "@/components/orders/PaymentVerificati
 import { DeliveryAssignDialog } from "@/components/orders/DeliveryAssignDialog";
 import { PackingSlipWindow } from "@/components/orders/PackingSlipWindow";
 import { SlaTimerBadge } from "@/components/orders/SlaTimerBadge";
+import { OrderNotes } from "@/components/orders/OrderNotes";
+import { OrderEditItemsDialog } from "@/components/orders/OrderEditItemsDialog";
+import { ApplyDiscountDialog } from "@/components/orders/ApplyDiscountDialog";
+
+const EDITABLE_STATUSES = ["confirmed_cod", "awaiting_payment_proof", "payment_under_review", "paid"];
 
 export default function OrderDetail() {
   const { id } = useParams<{ id: string }>();
@@ -24,9 +28,10 @@ export default function OrderDetail() {
   const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const { staff } = useStaff();
-  const [notes, setNotes] = useState("");
   const [paymentDialog, setPaymentDialog] = useState(false);
   const [deliveryDialog, setDeliveryDialog] = useState(false);
+  const [editItemsDialog, setEditItemsDialog] = useState(false);
+  const [discountDialog, setDiscountDialog] = useState(false);
   const [showPackingSlip, setShowPackingSlip] = useState(searchParams.get("print") === "slip");
 
   const { data: order } = useQuery({
@@ -49,7 +54,6 @@ export default function OrderDetail() {
     enabled: !!id,
   });
 
-  // SLA tracking for this order
   const { data: slaEntries } = useQuery({
     queryKey: ["order-sla", id],
     queryFn: async () => {
@@ -85,15 +89,6 @@ export default function OrderDetail() {
     onError: (e: any) => toast.error(e.message),
   });
 
-  const notesMutation = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase.from("orders").update({ internal_notes: notes } as any).eq("id", id!);
-      if (error) throw error;
-    },
-    onSuccess: () => toast.success("Notes saved"),
-    onError: (e: any) => toast.error(e.message),
-  });
-
   if (showPackingSlip && id) {
     return <PackingSlipWindow orderId={id} onClose={() => setShowPackingSlip(false)} />;
   }
@@ -104,6 +99,7 @@ export default function OrderDetail() {
   const riskFlags = (order.risk_flags || []) as string[];
   const riskScore = order.risk_score || 0;
   const activeSla = (slaEntries || []).find((s: any) => !s.resolved_at);
+  const isEditable = EDITABLE_STATUSES.includes(order.status);
 
   return (
     <div className="space-y-4">
@@ -123,7 +119,6 @@ export default function OrderDetail() {
             </div>
           </div>
         </div>
-        {/* Context Actions */}
         <div className="flex gap-2 flex-wrap">
           {order.status === "payment_under_review" && (
             <>
@@ -159,7 +154,18 @@ export default function OrderDetail() {
         <div className="lg:col-span-2 space-y-4">
           {/* Items */}
           <Card>
-            <CardHeader><CardTitle className="text-sm">Items Ordered</CardTitle></CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="text-sm">Items Ordered</CardTitle>
+              {isEditable ? (
+                <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setEditItemsDialog(true)}>
+                  <Edit className="h-3 w-3 mr-1" /> Edit Items
+                </Button>
+              ) : (
+                <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                  <Lock className="h-3 w-3" /> Locked
+                </span>
+              )}
+            </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
@@ -186,7 +192,19 @@ export default function OrderDetail() {
               <div className="border-t mt-2 pt-3 space-y-1 text-sm">
                 <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>{Number(order.subtotal || 0).toLocaleString()} MMK</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Delivery</span><span>{Number(order.shipping_cost).toLocaleString()} MMK</span></div>
-                {Number(order.discount) > 0 && <div className="flex justify-between"><span className="text-muted-foreground">Discount</span><span className="text-destructive">-{Number(order.discount).toLocaleString()} MMK</span></div>}
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Discount</span>
+                  <div className="flex items-center gap-2">
+                    <span className={Number(order.discount) > 0 ? "text-destructive" : ""}>
+                      {Number(order.discount) > 0 ? `-${Number(order.discount).toLocaleString()}` : "0"} MMK
+                    </span>
+                    {isEditable && (
+                      <Button variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={() => setDiscountDialog(true)}>
+                        <Percent className="h-3 w-3" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
                 <div className="flex justify-between font-bold border-t pt-1"><span>Total</span><span>{Number(order.total || 0).toLocaleString()} MMK</span></div>
               </div>
             </CardContent>
@@ -315,14 +333,8 @@ export default function OrderDetail() {
             </Card>
           )}
 
-          {/* Internal Notes */}
-          <Card>
-            <CardHeader><CardTitle className="text-sm">Internal Notes</CardTitle></CardHeader>
-            <CardContent className="space-y-2">
-              <Textarea value={notes || order.internal_notes || ""} onChange={e => setNotes(e.target.value)} rows={3} />
-              <Button size="sm" variant="outline" className="w-full" onClick={() => notesMutation.mutate()}>Save Notes</Button>
-            </CardContent>
-          </Card>
+          {/* Team Notes */}
+          <OrderNotes orderId={id!} />
 
           {/* Customer Notes */}
           {order.customer_notes && (
@@ -334,17 +346,10 @@ export default function OrderDetail() {
         </div>
       </div>
 
-      <PaymentVerificationDialog
-        open={paymentDialog}
-        onOpenChange={setPaymentDialog}
-        order={order}
-        mode="view"
-      />
-      <DeliveryAssignDialog
-        open={deliveryDialog}
-        onOpenChange={setDeliveryDialog}
-        order={order}
-      />
+      <PaymentVerificationDialog open={paymentDialog} onOpenChange={setPaymentDialog} order={order} mode="view" />
+      <DeliveryAssignDialog open={deliveryDialog} onOpenChange={setDeliveryDialog} order={order} />
+      {editItemsDialog && <OrderEditItemsDialog open={editItemsDialog} onOpenChange={setEditItemsDialog} orderId={id!} currentItems={items || []} order={order} />}
+      {discountDialog && <ApplyDiscountDialog open={discountDialog} onOpenChange={setDiscountDialog} orderId={id!} order={order} />}
     </div>
   );
 }
