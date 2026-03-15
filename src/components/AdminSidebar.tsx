@@ -39,6 +39,7 @@ const navGroups = [
       { title: "Quotes", url: "/quotes", icon: FileText, module: "quotes" },
       { title: "Customers", url: "/customers", icon: Users, module: "customers" },
       { title: "Reviews", url: "/reviews", icon: MessageSquare, module: "reviews" },
+      { title: "Tasks", url: "/tasks", icon: ClipboardList, module: "orders", badgeKey: "tasks" },
     ],
   },
   {
