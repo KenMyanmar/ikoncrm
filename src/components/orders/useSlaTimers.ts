@@ -20,8 +20,8 @@ export function useSlaTimers(orderIds: string[]) {
       setSlaMap({});
       return;
     }
-    const { data } = await supabase
-      .from("sla_tracking" as any)
+    const { data } = await (supabase as any)
+      .from("sla_tracking")
       .select("id, order_id, queue, target_at, warning_at, entered_at, is_breached")
       .in("order_id", orderIds)
       .is("resolved_at", null);
