@@ -55,6 +55,57 @@ export type Database = {
           },
         ]
       }
+      automation_rules: {
+        Row: {
+          action_config: Json
+          action_type: string
+          conditions: Json | null
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          last_run_at: string | null
+          name: string
+          priority: number | null
+          run_count: number | null
+          trigger_config: Json
+          trigger_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          action_config?: Json
+          action_type: string
+          conditions?: Json | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_run_at?: string | null
+          name: string
+          priority?: number | null
+          run_count?: number | null
+          trigger_config?: Json
+          trigger_type: string
+          updated_at?: string | null
+        }
+        Update: {
+          action_config?: Json
+          action_type?: string
+          conditions?: Json | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_run_at?: string | null
+          name?: string
+          priority?: number | null
+          run_count?: number | null
+          trigger_config?: Json
+          trigger_type?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       banners: {
         Row: {
           created_at: string
@@ -172,6 +223,13 @@ export type Database = {
             foreignKeyName: "cart_items_customer_id_fkey"
             columns: ["customer_id"]
             isOneToOne: false
+            referencedRelation: "customer_metrics"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "cart_items_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
             referencedRelation: "customers"
             referencedColumns: ["id"]
           },
@@ -253,6 +311,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      communication_templates: {
+        Row: {
+          body_template: string
+          channel: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          is_auto: boolean | null
+          subject_template: string | null
+          template_key: string
+          trigger_status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          body_template: string
+          channel?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_auto?: boolean | null
+          subject_template?: string | null
+          template_key: string
+          trigger_status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          body_template?: string
+          channel?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_auto?: boolean | null
+          subject_template?: string | null
+          template_key?: string
+          trigger_status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       coupon_usage: {
         Row: {
@@ -356,6 +453,106 @@ export type Database = {
         }
         Relationships: []
       }
+      crm_tasks: {
+        Row: {
+          assigned_to: string | null
+          automation_rule_id: string | null
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string | null
+          customer_id: string | null
+          description: string | null
+          due_at: string | null
+          id: string
+          metadata: Json | null
+          order_id: string | null
+          priority: string | null
+          queue: string
+          status: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          assigned_to?: string | null
+          automation_rule_id?: string | null
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string | null
+          customer_id?: string | null
+          description?: string | null
+          due_at?: string | null
+          id?: string
+          metadata?: Json | null
+          order_id?: string | null
+          priority?: string | null
+          queue: string
+          status?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          assigned_to?: string | null
+          automation_rule_id?: string | null
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string | null
+          customer_id?: string | null
+          description?: string | null
+          due_at?: string | null
+          id?: string
+          metadata?: Json | null
+          order_id?: string | null
+          priority?: string | null
+          queue?: string
+          status?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_tasks_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_tasks_automation_rule_id_fkey"
+            columns: ["automation_rule_id"]
+            isOneToOne: false
+            referencedRelation: "automation_rules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_tasks_completed_by_fkey"
+            columns: ["completed_by"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_tasks_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customer_metrics"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "crm_tasks_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_tasks_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customer_addresses: {
         Row: {
           address_line: string
@@ -401,7 +598,91 @@ export type Database = {
             foreignKeyName: "customer_addresses_customer_id_fkey"
             columns: ["customer_id"]
             isOneToOne: false
+            referencedRelation: "customer_metrics"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "customer_addresses_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
             referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customer_communications: {
+        Row: {
+          body: string
+          channel: string
+          created_at: string | null
+          customer_id: string
+          direction: string
+          id: string
+          metadata: Json | null
+          order_id: string | null
+          sent_at: string | null
+          sent_by: string | null
+          status: string | null
+          subject: string | null
+          template_key: string | null
+        }
+        Insert: {
+          body: string
+          channel: string
+          created_at?: string | null
+          customer_id: string
+          direction?: string
+          id?: string
+          metadata?: Json | null
+          order_id?: string | null
+          sent_at?: string | null
+          sent_by?: string | null
+          status?: string | null
+          subject?: string | null
+          template_key?: string | null
+        }
+        Update: {
+          body?: string
+          channel?: string
+          created_at?: string | null
+          customer_id?: string
+          direction?: string
+          id?: string
+          metadata?: Json | null
+          order_id?: string | null
+          sent_at?: string | null
+          sent_by?: string | null
+          status?: string | null
+          subject?: string | null
+          template_key?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_communications_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customer_metrics"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "customer_communications_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_communications_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_communications_sent_by_fkey"
+            columns: ["sent_by"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -415,11 +696,18 @@ export type Database = {
           credit_limit: number
           customer_type: string
           email: string | null
+          fraud_flags: string[] | null
           id: string
           is_approved_buyer: boolean
           name: string | null
           payment_terms: string
           phone: string | null
+          risk_tier: string | null
+          tags: string[] | null
+          total_cancelled_orders: number | null
+          total_cod_delivered: number | null
+          total_cod_orders: number | null
+          total_failed_deliveries: number | null
           updated_at: string
           user_id: string
         }
@@ -431,11 +719,18 @@ export type Database = {
           credit_limit?: number
           customer_type?: string
           email?: string | null
+          fraud_flags?: string[] | null
           id?: string
           is_approved_buyer?: boolean
           name?: string | null
           payment_terms?: string
           phone?: string | null
+          risk_tier?: string | null
+          tags?: string[] | null
+          total_cancelled_orders?: number | null
+          total_cod_delivered?: number | null
+          total_cod_orders?: number | null
+          total_failed_deliveries?: number | null
           updated_at?: string
           user_id: string
         }
@@ -447,11 +742,18 @@ export type Database = {
           credit_limit?: number
           customer_type?: string
           email?: string | null
+          fraud_flags?: string[] | null
           id?: string
           is_approved_buyer?: boolean
           name?: string | null
           payment_terms?: string
           phone?: string | null
+          risk_tier?: string | null
+          tags?: string[] | null
+          total_cancelled_orders?: number | null
+          total_cod_delivered?: number | null
+          total_cod_orders?: number | null
+          total_failed_deliveries?: number | null
           updated_at?: string
           user_id?: string
         }
@@ -459,14 +761,23 @@ export type Database = {
       }
       delivery_assignments: {
         Row: {
+          actual_route: Json | null
+          assigned_at: string | null
+          attempt_number: number | null
           created_at: string | null
           delivered_at: string | null
           delivery_notes: string | null
+          delivery_proof_type: string | null
+          delivery_proof_url: string | null
           driver_id: string
+          driver_notes: string | null
+          estimated_arrival: string | null
+          failed_reason: string | null
           gps_lat: number | null
           gps_lng: number | null
           id: string
           order_id: string
+          picked_up_at: string | null
           pickup_at: string | null
           proof_image_url: string | null
           recipient_name: string | null
@@ -474,14 +785,23 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          actual_route?: Json | null
+          assigned_at?: string | null
+          attempt_number?: number | null
           created_at?: string | null
           delivered_at?: string | null
           delivery_notes?: string | null
+          delivery_proof_type?: string | null
+          delivery_proof_url?: string | null
           driver_id: string
+          driver_notes?: string | null
+          estimated_arrival?: string | null
+          failed_reason?: string | null
           gps_lat?: number | null
           gps_lng?: number | null
           id?: string
           order_id: string
+          picked_up_at?: string | null
           pickup_at?: string | null
           proof_image_url?: string | null
           recipient_name?: string | null
@@ -489,14 +809,23 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          actual_route?: Json | null
+          assigned_at?: string | null
+          attempt_number?: number | null
           created_at?: string | null
           delivered_at?: string | null
           delivery_notes?: string | null
+          delivery_proof_type?: string | null
+          delivery_proof_url?: string | null
           driver_id?: string
+          driver_notes?: string | null
+          estimated_arrival?: string | null
+          failed_reason?: string | null
           gps_lat?: number | null
           gps_lng?: number | null
           id?: string
           order_id?: string
+          picked_up_at?: string | null
           pickup_at?: string | null
           proof_image_url?: string | null
           recipient_name?: string | null
@@ -561,6 +890,134 @@ export type Database = {
           zone?: string
         }
         Relationships: []
+      }
+      delivery_tracking_log: {
+        Row: {
+          assignment_id: string
+          created_at: string | null
+          id: string
+          latitude: number | null
+          longitude: number | null
+          note: string | null
+          photo_url: string | null
+          status: string
+        }
+        Insert: {
+          assignment_id: string
+          created_at?: string | null
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          note?: string | null
+          photo_url?: string | null
+          status: string
+        }
+        Update: {
+          assignment_id?: string
+          created_at?: string | null
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          note?: string | null
+          photo_url?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_tracking_log_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_assignments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      discount_requests: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string | null
+          customer_id: string | null
+          discount_type: string | null
+          discount_value: number
+          id: string
+          new_total: number | null
+          order_id: string | null
+          original_total: number | null
+          reason: string
+          rejection_reason: string | null
+          requested_by: string
+          status: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string | null
+          customer_id?: string | null
+          discount_type?: string | null
+          discount_value: number
+          id?: string
+          new_total?: number | null
+          order_id?: string | null
+          original_total?: number | null
+          reason: string
+          rejection_reason?: string | null
+          requested_by: string
+          status?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string | null
+          customer_id?: string | null
+          discount_type?: string | null
+          discount_value?: number
+          id?: string
+          new_total?: number | null
+          order_id?: string | null
+          original_total?: number | null
+          reason?: string
+          rejection_reason?: string | null
+          requested_by?: string
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "discount_requests_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "discount_requests_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customer_metrics"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "discount_requests_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "discount_requests_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "discount_requests_requested_by_fkey"
+            columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       flash_deals: {
         Row: {
@@ -631,6 +1088,78 @@ export type Database = {
           },
         ]
       }
+      kpi_snapshots: {
+        Row: {
+          created_at: string | null
+          id: string
+          metrics: Json
+          period: string
+          snapshot_date: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          metrics?: Json
+          period?: string
+          snapshot_date: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          metrics?: Json
+          period?: string
+          snapshot_date?: string
+        }
+        Relationships: []
+      }
+      order_edits: {
+        Row: {
+          created_at: string | null
+          description: string
+          edit_type: string
+          edited_by: string
+          id: string
+          new_value: Json | null
+          old_value: Json | null
+          order_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          description: string
+          edit_type: string
+          edited_by: string
+          id?: string
+          new_value?: Json | null
+          old_value?: Json | null
+          order_id: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string
+          edit_type?: string
+          edited_by?: string
+          id?: string
+          new_value?: Json | null
+          old_value?: Json | null
+          order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_edits_edited_by_fkey"
+            columns: ["edited_by"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_edits_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_items: {
         Row: {
           created_at: string
@@ -689,6 +1218,118 @@ export type Database = {
           },
         ]
       }
+      order_notes: {
+        Row: {
+          author_id: string
+          content: string
+          created_at: string | null
+          id: string
+          is_pinned: boolean | null
+          mentions: string[] | null
+          order_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          author_id: string
+          content: string
+          created_at?: string | null
+          id?: string
+          is_pinned?: boolean | null
+          mentions?: string[] | null
+          order_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          author_id?: string
+          content?: string
+          created_at?: string | null
+          id?: string
+          is_pinned?: boolean | null
+          mentions?: string[] | null
+          order_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_notes_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_notes_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      order_refunds: {
+        Row: {
+          amount: number
+          approved_by: string | null
+          created_at: string | null
+          id: string
+          notes: string | null
+          order_id: string
+          processed_at: string | null
+          reason: string
+          refund_method: string | null
+          requested_by: string | null
+          status: string | null
+        }
+        Insert: {
+          amount: number
+          approved_by?: string | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          order_id: string
+          processed_at?: string | null
+          reason: string
+          refund_method?: string | null
+          requested_by?: string | null
+          status?: string | null
+        }
+        Update: {
+          amount?: number
+          approved_by?: string | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          order_id?: string
+          processed_at?: string | null
+          reason?: string
+          refund_method?: string | null
+          requested_by?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_refunds_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_refunds_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_refunds_requested_by_fkey"
+            columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_status_history: {
         Row: {
           changed_by: string | null
@@ -735,12 +1376,15 @@ export type Database = {
       }
       orders: {
         Row: {
+          approved_at: string | null
+          approved_by: string | null
           assigned_to: string | null
           cancelled_by: string | null
           cancelled_reason: string | null
           contact_name: string | null
           contact_phone: string | null
           created_at: string
+          created_by: string | null
           currency: string
           customer_id: string | null
           customer_notes: string | null
@@ -764,6 +1408,10 @@ export type Database = {
           payment_verified_by: string | null
           priority: string
           purchase_order_number: string | null
+          requires_approval: boolean | null
+          risk_assessed_at: string | null
+          risk_flags: string[] | null
+          risk_score: number | null
           shipped_at: string | null
           shipping_cost: number
           source: string | null
@@ -775,12 +1423,15 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
           assigned_to?: string | null
           cancelled_by?: string | null
           cancelled_reason?: string | null
           contact_name?: string | null
           contact_phone?: string | null
           created_at?: string
+          created_by?: string | null
           currency?: string
           customer_id?: string | null
           customer_notes?: string | null
@@ -804,6 +1455,10 @@ export type Database = {
           payment_verified_by?: string | null
           priority?: string
           purchase_order_number?: string | null
+          requires_approval?: boolean | null
+          risk_assessed_at?: string | null
+          risk_flags?: string[] | null
+          risk_score?: number | null
           shipped_at?: string | null
           shipping_cost?: number
           source?: string | null
@@ -815,12 +1470,15 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          approved_at?: string | null
+          approved_by?: string | null
           assigned_to?: string | null
           cancelled_by?: string | null
           cancelled_reason?: string | null
           contact_name?: string | null
           contact_phone?: string | null
           created_at?: string
+          created_by?: string | null
           currency?: string
           customer_id?: string | null
           customer_notes?: string | null
@@ -844,6 +1502,10 @@ export type Database = {
           payment_verified_by?: string | null
           priority?: string
           purchase_order_number?: string | null
+          requires_approval?: boolean | null
+          risk_assessed_at?: string | null
+          risk_flags?: string[] | null
+          risk_score?: number | null
           shipped_at?: string | null
           shipping_cost?: number
           source?: string | null
@@ -856,11 +1518,32 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "orders_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "orders_assigned_to_fkey"
             columns: ["assigned_to"]
             isOneToOne: false
             referencedRelation: "staff_profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customer_metrics"
+            referencedColumns: ["customer_id"]
           },
           {
             foreignKeyName: "orders_customer_id_fkey"
@@ -1230,6 +1913,44 @@ export type Database = {
         }
         Relationships: []
       }
+      queue_assignments: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          is_primary: boolean | null
+          max_concurrent: number | null
+          queue: string
+          staff_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_primary?: boolean | null
+          max_concurrent?: number | null
+          queue: string
+          staff_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_primary?: boolean | null
+          max_concurrent?: number | null
+          queue?: string
+          staff_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "queue_assignments_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       quotes: {
         Row: {
           additional_notes: string | null
@@ -1319,6 +2040,13 @@ export type Database = {
             foreignKeyName: "quotes_customer_id_fkey"
             columns: ["customer_id"]
             isOneToOne: false
+            referencedRelation: "customer_metrics"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "quotes_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
             referencedRelation: "customers"
             referencedColumns: ["id"]
           },
@@ -1374,6 +2102,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "reviews_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customer_metrics"
+            referencedColumns: ["customer_id"]
+          },
           {
             foreignKeyName: "reviews_customer_id_fkey"
             columns: ["customer_id"]
@@ -1477,7 +2212,167 @@ export type Database = {
             foreignKeyName: "saved_lists_customer_id_fkey"
             columns: ["customer_id"]
             isOneToOne: false
+            referencedRelation: "customer_metrics"
+            referencedColumns: ["customer_id"]
+          },
+          {
+            foreignKeyName: "saved_lists_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
             referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sla_rules: {
+        Row: {
+          created_at: string | null
+          escalation_message: string | null
+          escalation_to: string | null
+          id: string
+          is_active: boolean | null
+          queue: string
+          target_minutes: number
+          trigger_status: string
+          warning_minutes: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          escalation_message?: string | null
+          escalation_to?: string | null
+          id?: string
+          is_active?: boolean | null
+          queue: string
+          target_minutes: number
+          trigger_status: string
+          warning_minutes?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          escalation_message?: string | null
+          escalation_to?: string | null
+          id?: string
+          is_active?: boolean | null
+          queue?: string
+          target_minutes?: number
+          trigger_status?: string
+          warning_minutes?: number | null
+        }
+        Relationships: []
+      }
+      sla_tracking: {
+        Row: {
+          assigned_to: string | null
+          created_at: string | null
+          entered_at: string
+          id: string
+          is_breached: boolean | null
+          is_escalated: boolean | null
+          is_warning_sent: boolean | null
+          order_id: string
+          queue: string
+          resolved_at: string | null
+          sla_rule_id: string | null
+          status_entered: string
+          target_at: string
+          warning_at: string | null
+        }
+        Insert: {
+          assigned_to?: string | null
+          created_at?: string | null
+          entered_at?: string
+          id?: string
+          is_breached?: boolean | null
+          is_escalated?: boolean | null
+          is_warning_sent?: boolean | null
+          order_id: string
+          queue: string
+          resolved_at?: string | null
+          sla_rule_id?: string | null
+          status_entered: string
+          target_at: string
+          warning_at?: string | null
+        }
+        Update: {
+          assigned_to?: string | null
+          created_at?: string | null
+          entered_at?: string
+          id?: string
+          is_breached?: boolean | null
+          is_escalated?: boolean | null
+          is_warning_sent?: boolean | null
+          order_id?: string
+          queue?: string
+          resolved_at?: string | null
+          sla_rule_id?: string | null
+          status_entered?: string
+          target_at?: string
+          warning_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sla_tracking_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sla_tracking_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sla_tracking_sla_rule_id_fkey"
+            columns: ["sla_rule_id"]
+            isOneToOne: false
+            referencedRelation: "sla_rules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      staff_notifications: {
+        Row: {
+          body: string | null
+          created_at: string | null
+          id: string
+          is_read: boolean | null
+          link: string | null
+          metadata: Json | null
+          staff_id: string
+          title: string
+          type: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          link?: string | null
+          metadata?: Json | null
+          staff_id: string
+          title: string
+          type: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          link?: string | null
+          metadata?: Json | null
+          staff_id?: string
+          title?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_notifications_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1526,6 +2421,39 @@ export type Database = {
       }
     }
     Views: {
+      customer_metrics: {
+        Row: {
+          address_count: number | null
+          avg_order_value: number | null
+          cancelled_orders: number | null
+          communication_count: number | null
+          company_name: string | null
+          customer_id: string | null
+          customer_since: string | null
+          delivered_orders: number | null
+          email: string | null
+          fraud_flags: string[] | null
+          frequency_90d: number | null
+          last_order_date: string | null
+          lifetime_value: number | null
+          monetary_avg: number | null
+          name: string | null
+          orders_last_30d: number | null
+          orders_last_90d: number | null
+          phone: string | null
+          preferred_payment: string | null
+          recency_days: number | null
+          rfm_segment: string | null
+          risk_tier: string | null
+          tags: string[] | null
+          total_cancelled_orders: number | null
+          total_cod: number | null
+          total_failed_deliveries: number | null
+          total_orders: number | null
+          total_prepaid: number | null
+        }
+        Relationships: []
+      }
       product_review_stats: {
         Row: {
           avg_rating: number | null
@@ -1634,6 +2562,7 @@ export type Database = {
       }
     }
     Functions: {
+      assess_order_risk: { Args: { p_order_id: string }; Returns: Json }
       bulk_update_product: {
         Args: {
           p_long_description: string
@@ -1650,8 +2579,25 @@ export type Database = {
         Args: { _product_id: string }
         Returns: number
       }
+      create_manual_order: {
+        Args: {
+          p_contact_name?: string
+          p_contact_phone?: string
+          p_created_by: string
+          p_customer_id: string
+          p_customer_notes?: string
+          p_delivery_address_id?: string
+          p_delivery_zone?: string
+          p_internal_notes?: string
+          p_items?: Json
+          p_payment_method?: string
+          p_source?: string
+        }
+        Returns: Json
+      }
       get_category_path: { Args: { cat_id: string }; Returns: string }
       get_customer_id_for_user: { Args: { _user_id: string }; Returns: string }
+      get_live_kpis: { Args: never; Returns: Json }
       get_staff_department: { Args: never; Returns: string }
       get_staff_role: { Args: { _user_id: string }; Returns: string }
       get_staff_role_level: { Args: never; Returns: number }

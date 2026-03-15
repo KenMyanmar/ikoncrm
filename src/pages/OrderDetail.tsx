@@ -9,13 +9,14 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { ArrowLeft, CheckCircle, XCircle, Package, Truck, Printer } from "lucide-react";
+import { ArrowLeft, CheckCircle, XCircle, Package, Truck, Printer, AlertTriangle, Clock, Shield } from "lucide-react";
 import { useState } from "react";
-import { STATUS_LABELS, STATUS_COLORS, PAYMENT_STATUS_COLORS, PAYMENT_METHOD_LABELS, formatRelativeTime } from "@/components/orders/orderConstants";
+import { STATUS_LABELS, STATUS_COLORS, PAYMENT_STATUS_COLORS, PAYMENT_METHOD_LABELS, RISK_FLAG_LABELS, formatRelativeTime } from "@/components/orders/orderConstants";
 import { OrderStatusTimeline } from "@/components/orders/OrderStatusTimeline";
 import { PaymentVerificationDialog } from "@/components/orders/PaymentVerificationDialog";
 import { DeliveryAssignDialog } from "@/components/orders/DeliveryAssignDialog";
 import { PackingSlipWindow } from "@/components/orders/PackingSlipWindow";
+import { SlaTimerBadge } from "@/components/orders/SlaTimerBadge";
 
 export default function OrderDetail() {
   const { id } = useParams<{ id: string }>();
@@ -44,6 +45,20 @@ export default function OrderDetail() {
     queryFn: async () => {
       const { data } = await supabase.from("order_items").select("*").eq("order_id", id!);
       return data || [];
+    },
+    enabled: !!id,
+  });
+
+  // SLA tracking for this order
+  const { data: slaEntries } = useQuery({
+    queryKey: ["order-sla", id],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from("sla_tracking")
+        .select("*")
+        .eq("order_id", id!)
+        .order("entered_at", { ascending: true });
+      return (data || []) as any[];
     },
     enabled: !!id,
   });
@@ -86,6 +101,9 @@ export default function OrderDetail() {
   if (!order) return <div className="flex items-center justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>;
 
   const address = (order as any).customer_addresses;
+  const riskFlags = (order.risk_flags || []) as string[];
+  const riskScore = order.risk_score || 0;
+  const activeSla = (slaEntries || []).find((s: any) => !s.resolved_at);
 
   return (
     <div className="space-y-4">
@@ -99,7 +117,10 @@ export default function OrderDetail() {
               <Badge variant="secondary" className={`text-[10px] ${STATUS_COLORS[order.status] || ""}`}>{STATUS_LABELS[order.status] || order.status}</Badge>
               <Badge variant="outline" className={`text-[10px] ${PAYMENT_STATUS_COLORS[order.payment_status] || ""}`}>{order.payment_status}</Badge>
             </div>
-            <p className="text-sm text-muted-foreground">{formatRelativeTime(order.created_at)}</p>
+            <div className="flex items-center gap-2 mt-0.5">
+              <p className="text-sm text-muted-foreground">{formatRelativeTime(order.created_at)}</p>
+              {activeSla && <SlaTimerBadge targetAt={activeSla.target_at} />}
+            </div>
           </div>
         </div>
         {/* Context Actions */}
@@ -230,6 +251,69 @@ export default function OrderDetail() {
               {order.delivery_zone && <Badge variant="outline" className="text-[10px] mt-2">{order.delivery_zone}</Badge>}
             </CardContent>
           </Card>
+
+          {/* SLA Performance */}
+          {slaEntries && slaEntries.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-info" /> SLA Performance
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {(slaEntries as any[]).map((sla: any) => {
+                  const isActive = !sla.resolved_at;
+                  const isOverdue = isActive && new Date(sla.target_at).getTime() < Date.now();
+                  const resolved = sla.resolved_at;
+                  const durationMs = resolved
+                    ? new Date(resolved).getTime() - new Date(sla.entered_at).getTime()
+                    : Date.now() - new Date(sla.entered_at).getTime();
+                  const durationMin = Math.round(durationMs / 60000);
+
+                  return (
+                    <div key={sla.id} className="flex items-center justify-between text-xs border-b border-border pb-2 last:border-0">
+                      <div className="flex items-center gap-2">
+                        {resolved && !sla.is_breached && <CheckCircle className="h-3.5 w-3.5 text-success" />}
+                        {resolved && sla.is_breached && <XCircle className="h-3.5 w-3.5 text-destructive" />}
+                        {isActive && !isOverdue && <Clock className="h-3.5 w-3.5 text-info" />}
+                        {isActive && isOverdue && <AlertTriangle className="h-3.5 w-3.5 text-destructive" />}
+                        <span className="capitalize text-foreground">{sla.queue}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {isActive ? (
+                          <SlaTimerBadge targetAt={sla.target_at} />
+                        ) : (
+                          <span className={`text-[10px] ${sla.is_breached ? "text-destructive" : "text-success"}`}>
+                            {durationMin} min
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Risk Assessment */}
+          {riskScore > 0 && (
+            <Card className="border-warning/30">
+              <CardHeader>
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Shield className="h-4 w-4 text-warning" />
+                  Risk Assessment — Score: {riskScore}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {riskFlags.map((flag) => (
+                  <div key={flag} className="flex items-center gap-2 text-xs">
+                    <span className={`h-2 w-2 rounded-full ${riskScore >= 60 ? "bg-destructive" : "bg-warning"}`} />
+                    <span className="text-foreground">{RISK_FLAG_LABELS[flag] || flag}</span>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
 
           {/* Internal Notes */}
           <Card>
