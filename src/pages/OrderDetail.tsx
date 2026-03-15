@@ -21,6 +21,7 @@ import { OrderEditItemsDialog } from "@/components/orders/OrderEditItemsDialog";
 import { ApplyDiscountDialog } from "@/components/orders/ApplyDiscountDialog";
 import { CommunicationLog } from "@/components/orders/CommunicationLog";
 import { SendMessageDialog } from "@/components/orders/SendMessageDialog";
+import { DeliveryTrackingCard } from "@/components/orders/DeliveryTrackingCard";
 
 const EDITABLE_STATUSES = ["confirmed_cod", "awaiting_payment_proof", "payment_under_review", "paid"];
 
@@ -291,6 +292,11 @@ export default function OrderDetail() {
               {order.delivery_zone && <Badge variant="outline" className="text-[10px] mt-2">{order.delivery_zone}</Badge>}
             </CardContent>
           </Card>
+
+          {/* Delivery Tracking */}
+          {["out_for_delivery", "delivered"].includes(order.status) && (
+            <DeliveryTrackingCard orderId={id!} />
+          )}
 
           {/* SLA Performance */}
           {slaEntries && slaEntries.length > 0 && (
