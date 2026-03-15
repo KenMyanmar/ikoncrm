@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import {
   LayoutDashboard, Package, Grid3X3, Tag, ShoppingCart, FileText,
   Users, Image, UserCog, BarChart3, Activity, Settings, LogOut, Truck,
-  Percent, Zap, Ticket, MessageSquare, Shield,
+  Percent, Zap, Ticket, MessageSquare, Shield, ClipboardList,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useStaff, hasPermission } from "@/contexts/StaffContext";
@@ -39,6 +39,7 @@ const navGroups = [
       { title: "Quotes", url: "/quotes", icon: FileText, module: "quotes" },
       { title: "Customers", url: "/customers", icon: Users, module: "customers" },
       { title: "Reviews", url: "/reviews", icon: MessageSquare, module: "reviews" },
+      { title: "Tasks", url: "/tasks", icon: ClipboardList, module: "orders", badgeKey: "tasks" },
     ],
   },
   {
@@ -61,6 +62,7 @@ const navGroups = [
     items: [
       { title: "Staff", url: "/staff", icon: UserCog, module: "staff" },
       { title: "Risk & Revenue", url: "/risk", icon: Shield, module: "reports" },
+      { title: "Automations", url: "/automations", icon: Zap, module: "reports" },
       { title: "Reports", url: "/reports", icon: BarChart3, module: "reports" },
       { title: "Activity Log", url: "/activity", icon: Activity, module: "activity" },
       { title: "Settings", url: "/settings", icon: Settings, module: "settings" },
@@ -74,15 +76,18 @@ export function AdminSidebar() {
   const collapsed = state === "collapsed";
   const role = staff?.role || "viewer";
   const [orderBadge, setOrderBadge] = useState(0);
+  const [taskBadge, setTaskBadge] = useState(0);
 
   useEffect(() => {
     if (!staff) return;
-    const fetchCount = async () => {
-      const { count } = await supabase.from("orders").select("*", { count: "exact", head: true }).eq("status", "payment_under_review");
-      setOrderBadge(count || 0);
+    const fetchCounts = async () => {
+      const { count: oCount } = await supabase.from("orders").select("*", { count: "exact", head: true }).eq("status", "payment_under_review");
+      setOrderBadge(oCount || 0);
+      const { count: tCount } = await supabase.from("crm_tasks").select("*", { count: "exact", head: true }).in("status", ["open", "in_progress"]).eq("assigned_to", staff.id);
+      setTaskBadge(tCount || 0);
     };
-    fetchCount();
-    const interval = setInterval(fetchCount, 30000);
+    fetchCounts();
+    const interval = setInterval(fetchCounts, 30000);
     return () => clearInterval(interval);
   }, [staff]);
 
@@ -128,6 +133,11 @@ export function AdminSidebar() {
                             {"badgeKey" in item && item.badgeKey === "orders" && orderBadge > 0 && (
                               <span className="ml-auto bg-sidebar-primary text-sidebar-primary-foreground text-[9px] font-bold rounded-full h-4 min-w-[16px] flex items-center justify-center px-1">
                                 {orderBadge}
+                              </span>
+                            )}
+                            {"badgeKey" in item && item.badgeKey === "tasks" && taskBadge > 0 && (
+                              <span className="ml-auto bg-sidebar-primary text-sidebar-primary-foreground text-[9px] font-bold rounded-full h-4 min-w-[16px] flex items-center justify-center px-1">
+                                {taskBadge}
                               </span>
                             )}
                           </span>

@@ -1,8 +1,10 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AdminSidebar } from "@/components/AdminSidebar";
 import { Outlet } from "react-router-dom";
+import { useAutomationRunner } from "@/hooks/useAutomationRunner";
 
 export default function AdminLayout() {
+  useAutomationRunner();
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">

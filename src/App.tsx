@@ -33,6 +33,8 @@ import ReviewList from "@/pages/ReviewList";
 import ResetPassword from "@/pages/ResetPassword";
 import CreateOrder from "@/pages/CreateOrder";
 import RiskRevenue from "@/pages/RiskRevenue";
+import Automations from "@/pages/Automations";
+import CrmTasks from "@/pages/CrmTasks";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -73,6 +75,8 @@ const App = () => (
                 <Route path="coupons" element={<ProtectedRoute module="coupons"><Coupons /></ProtectedRoute>} />
                 <Route path="reviews" element={<ProtectedRoute module="reviews"><ReviewList /></ProtectedRoute>} />
                 <Route path="risk" element={<ProtectedRoute module="reports"><RiskRevenue /></ProtectedRoute>} />
+                <Route path="automations" element={<ProtectedRoute module="reports"><Automations /></ProtectedRoute>} />
+                <Route path="tasks" element={<ProtectedRoute module="orders"><CrmTasks /></ProtectedRoute>} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
