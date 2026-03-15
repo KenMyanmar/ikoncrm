@@ -53,12 +53,12 @@ export default function OrderDetail() {
   const { data: slaEntries } = useQuery({
     queryKey: ["order-sla", id],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("sla_tracking" as any)
+      const { data } = await (supabase as any)
+        .from("sla_tracking")
         .select("*")
         .eq("order_id", id!)
         .order("entered_at", { ascending: true });
-      return data || [];
+      return (data || []) as any[];
     },
     enabled: !!id,
   });
