@@ -15,6 +15,7 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import ikonLogo from "@/assets/ikon-logo.png";
+import { NotificationBell } from "@/components/sidebar/NotificationBell";
 
 const navGroups = [
   {
