@@ -374,3 +374,53 @@ export default function OrderDetail() {
     </div>
   );
 }
+
+/* ─── Customer Insight Card ─── */
+function CustomerInsightCard({ order, navigate }: { order: any; navigate: any }) {
+  const cust = (order as any).customers;
+  const { data: metrics } = useQuery({
+    queryKey: ["customer-metrics-inline", order.customer_id],
+    queryFn: async () => {
+      const { data } = await supabase.from("customer_metrics").select("*").eq("customer_id", order.customer_id).single();
+      return data as any;
+    },
+    enabled: !!order.customer_id,
+  });
+
+  const relTime = (d: string | null) => {
+    if (!d) return "—";
+    const diff = Date.now() - new Date(d).getTime();
+    const hrs = Math.floor(diff / 3600000);
+    if (hrs < 24) return `${hrs}h ago`;
+    return `${Math.floor(hrs / 24)}d ago`;
+  };
+
+  return (
+    <Card>
+      <CardHeader><CardTitle className="text-sm">Customer</CardTitle></CardHeader>
+      <CardContent className="text-sm space-y-1">
+        <p className="font-medium">{cust?.company_name || cust?.name || "—"}</p>
+        <p className="text-muted-foreground">{cust?.email}</p>
+        <p className="text-muted-foreground">{cust?.phone}</p>
+        {order.contact_name && <p className="text-xs mt-2"><span className="text-muted-foreground">Contact:</span> {order.contact_name} {order.contact_phone && `· ${order.contact_phone}`}</p>}
+        {metrics && (
+          <div className="pt-2 mt-2 border-t space-y-1">
+            <p className="text-xs">📊 {metrics.total_orders || 0} orders · {Number(metrics.lifetime_value || 0).toLocaleString()} MMK lifetime</p>
+            <p className="text-xs">⏰ Last order: {relTime(metrics.last_order_date)}</p>
+            {metrics.preferred_payment && <p className="text-xs">💳 Preferred: {metrics.preferred_payment}</p>}
+            {metrics.tags?.length > 0 && (
+              <div className="flex gap-1 flex-wrap pt-1">
+                {metrics.tags.map((t: string) => <Badge key={t} variant="outline" className="text-[9px]">{t}</Badge>)}
+              </div>
+            )}
+          </div>
+        )}
+        {order.customer_id && (
+          <Button variant="link" size="sm" className="px-0 h-auto text-xs" onClick={() => navigate(`/customers/${order.customer_id}`)}>
+            View Full Profile →
+          </Button>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
