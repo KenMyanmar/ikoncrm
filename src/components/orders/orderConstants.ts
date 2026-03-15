@@ -56,6 +56,53 @@ export const TAB_STATUS_MAP: Record<string, string[]> = {
   cancelled: ["cancelled"],
 };
 
+export const KANBAN_COLUMNS = [
+  {
+    key: "payment",
+    label: "Payment Queue",
+    icon: "CreditCard",
+    statuses: ["awaiting_payment_proof", "payment_under_review"],
+    color: "text-warning",
+  },
+  {
+    key: "warehouse",
+    label: "Warehouse",
+    icon: "Package",
+    statuses: ["confirmed_cod", "paid", "packed"],
+    color: "text-primary",
+  },
+  {
+    key: "delivery",
+    label: "Delivery",
+    icon: "Truck",
+    statuses: ["out_for_delivery"],
+    color: "text-info",
+  },
+  {
+    key: "done",
+    label: "Done Today",
+    icon: "CheckCircle",
+    statuses: ["delivered"],
+    color: "text-success",
+  },
+  {
+    key: "exceptions",
+    label: "Exceptions",
+    icon: "AlertTriangle",
+    statuses: ["payment_rejected", "cancelled", "expired"],
+    color: "text-destructive",
+  },
+] as const;
+
+export const RISK_FLAG_LABELS: Record<string, string> = {
+  first_time_cod: "First-time COD buyer",
+  high_value_cod: "High value COD > 1M MMK",
+  frequent_canceller: "Frequent cancellations",
+  delivery_failures: "Previous delivery failures",
+  very_high_value: "Very high value order > 5M MMK",
+  remote_cod: "Remote zone COD",
+};
+
 export function formatRelativeTime(dateStr: string): string {
   const now = new Date();
   const date = new Date(dateStr);
@@ -68,4 +115,31 @@ export function formatRelativeTime(dateStr: string): string {
   const diffDays = Math.floor(diffHours / 24);
   if (diffDays < 7) return `${diffDays}d ago`;
   return date.toLocaleDateString();
+}
+
+export function formatSlaTime(targetAt: string): { label: string; status: "green" | "amber" | "red" } {
+  const now = Date.now();
+  const target = new Date(targetAt).getTime();
+  const remaining = target - now;
+
+  if (remaining <= 0) {
+    const overdue = Math.abs(remaining);
+    const mins = Math.floor(overdue / 60000);
+    const secs = Math.floor((overdue % 60000) / 1000);
+    return {
+      label: `OVERDUE +${mins}:${secs.toString().padStart(2, "0")}`,
+      status: "red",
+    };
+  }
+
+  const mins = Math.floor(remaining / 60000);
+  const secs = Math.floor((remaining % 60000) / 1000);
+  const hrs = Math.floor(mins / 60);
+  const label = hrs > 0 ? `${hrs}:${(mins % 60).toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}` : `${mins}:${secs.toString().padStart(2, "0")}`;
+
+  // If less than 50% of the original time remains, show amber
+  // We approximate by treating < 15 min as amber for simplicity
+  const status = mins < 15 ? "amber" : "green";
+
+  return { label, status };
 }
