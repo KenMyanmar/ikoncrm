@@ -372,6 +372,7 @@ export default function OrderDetail() {
       <DeliveryAssignDialog open={deliveryDialog} onOpenChange={setDeliveryDialog} order={order} />
       {editItemsDialog && <OrderEditItemsDialog open={editItemsDialog} onOpenChange={setEditItemsDialog} orderId={id!} currentItems={items || []} order={order} />}
       {discountDialog && <ApplyDiscountDialog open={discountDialog} onOpenChange={setDiscountDialog} orderId={id!} order={order} />}
+      <SendMessageDialog open={sendMessageDialog} onOpenChange={setSendMessageDialog} order={order} preselectedTemplate={preselectedTemplate} />
     </div>
   );
 }
