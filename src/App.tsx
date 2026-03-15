@@ -31,6 +31,7 @@ import FlashDeals from "@/pages/FlashDeals";
 import Coupons from "@/pages/Coupons";
 import ReviewList from "@/pages/ReviewList";
 import ResetPassword from "@/pages/ResetPassword";
+import CreateOrder from "@/pages/CreateOrder";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
