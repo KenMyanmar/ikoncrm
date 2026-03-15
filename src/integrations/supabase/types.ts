@@ -2645,6 +2645,7 @@ export type Database = {
       }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
+      take_kpi_snapshot: { Args: { p_period?: string }; Returns: undefined }
     }
     Enums: {
       [_ in never]: never
