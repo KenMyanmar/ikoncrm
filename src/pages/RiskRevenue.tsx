@@ -44,11 +44,7 @@ const REFUND_REASONS = [
   "Duplicate order", "Delivery failed (no reattempt)", "Other",
 ];
 
-const FRAUD_FLAGS = [
-  "suspicious_activity", "repeat_cod_failures", "address_inconsistency",
-  "payment_fraud", "abusive_returns",
-];
-const FRAUD_FLAG_LABELS: Record<string, string> = {
+const _FRAUD_FLAGS = [
   suspicious_activity: "Suspicious activity",
   repeat_cod_failures: "Repeat COD failures",
   address_inconsistency: "Address inconsistency",
