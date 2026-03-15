@@ -19,6 +19,8 @@ import { SlaTimerBadge } from "@/components/orders/SlaTimerBadge";
 import { OrderNotes } from "@/components/orders/OrderNotes";
 import { OrderEditItemsDialog } from "@/components/orders/OrderEditItemsDialog";
 import { ApplyDiscountDialog } from "@/components/orders/ApplyDiscountDialog";
+import { CommunicationLog } from "@/components/orders/CommunicationLog";
+import { SendMessageDialog } from "@/components/orders/SendMessageDialog";
 
 const EDITABLE_STATUSES = ["confirmed_cod", "awaiting_payment_proof", "payment_under_review", "paid"];
 
