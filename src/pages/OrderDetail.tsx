@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useStaff } from "@/contexts/StaffContext";
@@ -7,25 +7,33 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, CheckCircle, XCircle, Package, Truck, Printer } from "lucide-react";
 import { useState } from "react";
-
-const STATUSES = ["pending", "confirmed", "processing", "shipped", "delivered", "cancelled"];
+import { STATUS_LABELS, STATUS_COLORS, PAYMENT_STATUS_COLORS, PAYMENT_METHOD_LABELS, formatRelativeTime } from "@/components/orders/orderConstants";
+import { OrderStatusTimeline } from "@/components/orders/OrderStatusTimeline";
+import { PaymentVerificationDialog } from "@/components/orders/PaymentVerificationDialog";
+import { DeliveryAssignDialog } from "@/components/orders/DeliveryAssignDialog";
+import { PackingSlipWindow } from "@/components/orders/PackingSlipWindow";
 
 export default function OrderDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const { staff } = useStaff();
   const [notes, setNotes] = useState("");
+  const [paymentDialog, setPaymentDialog] = useState(false);
+  const [deliveryDialog, setDeliveryDialog] = useState(false);
+  const [showPackingSlip, setShowPackingSlip] = useState(searchParams.get("print") === "slip");
 
   const { data: order } = useQuery({
     queryKey: ["admin-order", id],
     queryFn: async () => {
-      const { data } = await supabase.from("orders").select("*, customers(name, company_name, email, phone)").eq("id", id!).single();
+      const { data } = await supabase.from("orders")
+        .select("*, customers(name, company_name, email, phone), customer_addresses!orders_delivery_address_id_fkey(address_line, township, city, region, contact_phone, delivery_notes)")
+        .eq("id", id!).single();
       return data;
     },
     enabled: !!id,
@@ -40,13 +48,25 @@ export default function OrderDetail() {
     enabled: !!id,
   });
 
-  const statusMutation = useMutation({
-    mutationFn: async (newStatus: string) => {
-      const { error } = await supabase.from("orders").update({ status: newStatus } as any).eq("id", id!);
+  const markPackedMutation = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("orders").update({ status: "packed", packed_at: new Date().toISOString() } as any).eq("id", id!);
       if (error) throw error;
-      if (staff) await logActivity(staff.id, `status_${newStatus}`, "order", id!, order?.order_number);
+      await supabase.from("order_status_history").insert({ order_id: id!, from_status: order?.status, to_status: "packed", changed_by: staff?.id, changed_by_role: staff?.role, reason: `Marked as packed by ${staff?.full_name}` } as any);
+      if (staff) await logActivity(staff.id, "order_packed", "order", id!, order?.order_number);
     },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["admin-order", id] }); toast.success("Status updated"); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["admin-order", id] }); toast.success("Order marked as packed"); },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const markDeliveredMutation = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("orders").update({ status: "delivered", delivered_at: new Date().toISOString() } as any).eq("id", id!);
+      if (error) throw error;
+      await supabase.from("order_status_history").insert({ order_id: id!, from_status: order?.status, to_status: "delivered", changed_by: staff?.id, changed_by_role: staff?.role, reason: `Marked as delivered by ${staff?.full_name}` } as any);
+      if (staff) await logActivity(staff.id, "order_delivered", "order", id!, order?.order_number);
+    },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["admin-order", id] }); toast.success("Order marked as delivered"); },
     onError: (e: any) => toast.error(e.message),
   });
 
@@ -55,46 +75,70 @@ export default function OrderDetail() {
       const { error } = await supabase.from("orders").update({ internal_notes: notes } as any).eq("id", id!);
       if (error) throw error;
     },
-    onSuccess: () => { toast.success("Notes saved"); },
+    onSuccess: () => toast.success("Notes saved"),
     onError: (e: any) => toast.error(e.message),
   });
 
+  if (showPackingSlip && id) {
+    return <PackingSlipWindow orderId={id} onClose={() => setShowPackingSlip(false)} />;
+  }
+
   if (!order) return <div className="flex items-center justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>;
+
+  const address = (order as any).customer_addresses;
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="sm" onClick={() => navigate("/orders")}><ArrowLeft className="h-4 w-4" /></Button>
-        <div>
-          <h1 className="text-xl font-bold text-foreground">{order.order_number}</h1>
-          <p className="text-sm text-muted-foreground">{new Date(order.created_at).toLocaleString()}</p>
+      {/* Header */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="sm" onClick={() => navigate("/orders")}><ArrowLeft className="h-4 w-4" /></Button>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-bold text-foreground">{order.order_number}</h1>
+              <Badge variant="secondary" className={`text-[10px] ${STATUS_COLORS[order.status] || ""}`}>{STATUS_LABELS[order.status] || order.status}</Badge>
+              <Badge variant="outline" className={`text-[10px] ${PAYMENT_STATUS_COLORS[order.payment_status] || ""}`}>{order.payment_status}</Badge>
+            </div>
+            <p className="text-sm text-muted-foreground">{formatRelativeTime(order.created_at)}</p>
+          </div>
+        </div>
+        {/* Context Actions */}
+        <div className="flex gap-2 flex-wrap">
+          {order.status === "payment_under_review" && (
+            <>
+              <Button size="sm" className="bg-success hover:bg-success/90 text-success-foreground" onClick={() => setPaymentDialog(true)}>
+                <CheckCircle className="h-4 w-4 mr-1" /> Approve
+              </Button>
+              <Button size="sm" variant="destructive" onClick={() => setPaymentDialog(true)}>
+                <XCircle className="h-4 w-4 mr-1" /> Reject
+              </Button>
+            </>
+          )}
+          {(order.status === "confirmed_cod" || order.status === "paid") && (
+            <Button size="sm" onClick={() => markPackedMutation.mutate()} disabled={markPackedMutation.isPending}>
+              <Package className="h-4 w-4 mr-1" /> Mark Packed
+            </Button>
+          )}
+          {order.status === "packed" && (
+            <>
+              <Button size="sm" onClick={() => setDeliveryDialog(true)}><Truck className="h-4 w-4 mr-1" /> Assign Delivery</Button>
+              <Button size="sm" variant="outline" onClick={() => setShowPackingSlip(true)}><Printer className="h-4 w-4 mr-1" /> Packing Slip</Button>
+            </>
+          )}
+          {order.status === "out_for_delivery" && (
+            <Button size="sm" className="bg-success hover:bg-success/90 text-success-foreground" onClick={() => markDeliveredMutation.mutate()} disabled={markDeliveredMutation.isPending}>
+              <CheckCircle className="h-4 w-4 mr-1" /> Mark Delivered
+            </Button>
+          )}
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Left Column */}
         <div className="lg:col-span-2 space-y-4">
+          {/* Items */}
           <Card>
-            <CardHeader><CardTitle className="text-sm">Status Pipeline</CardTitle></CardHeader>
-            <CardContent>
-              <div className="flex gap-2 flex-wrap">
-                {STATUSES.map(s => (
-                  <Button
-                    key={s}
-                    size="sm"
-                    variant={order.status === s ? "default" : "outline"}
-                    className={order.status === s ? "bg-accent text-accent-foreground" : ""}
-                    onClick={() => statusMutation.mutate(s)}
-                    disabled={statusMutation.isPending}
-                  >
-                    {s}
-                  </Button>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader><CardTitle className="text-sm">Order Items</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-sm">Items Ordered</CardTitle></CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
@@ -112,37 +156,82 @@ export default function OrderDetail() {
                       <TableCell className="text-sm">{item.product_name || "—"}</TableCell>
                       <TableCell className="font-mono text-xs">{item.sku || "—"}</TableCell>
                       <TableCell>{item.quantity}</TableCell>
-                      <TableCell>{Number(item.unit_price).toLocaleString()}</TableCell>
-                      <TableCell className="font-medium">{Number(item.total).toLocaleString()}</TableCell>
+                      <TableCell>{Number(item.unit_price).toLocaleString()} MMK</TableCell>
+                      <TableCell className="font-medium">{Number(item.total).toLocaleString()} MMK</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
+              <div className="border-t mt-2 pt-3 space-y-1 text-sm">
+                <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>{Number(order.subtotal || 0).toLocaleString()} MMK</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Delivery</span><span>{Number(order.shipping_cost).toLocaleString()} MMK</span></div>
+                {Number(order.discount) > 0 && <div className="flex justify-between"><span className="text-muted-foreground">Discount</span><span className="text-destructive">-{Number(order.discount).toLocaleString()} MMK</span></div>}
+                <div className="flex justify-between font-bold border-t pt-1"><span>Total</span><span>{Number(order.total || 0).toLocaleString()} MMK</span></div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Payment Info */}
+          <Card>
+            <CardHeader><CardTitle className="text-sm">Payment Info</CardTitle></CardHeader>
+            <CardContent className="space-y-3">
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div><span className="text-muted-foreground">Method</span><p className="font-medium">{PAYMENT_METHOD_LABELS[order.payment_method] || order.payment_method || "—"}</p></div>
+                <div><span className="text-muted-foreground">Status</span><p><Badge variant="outline" className={`text-[10px] ${PAYMENT_STATUS_COLORS[order.payment_status] || ""}`}>{order.payment_status}</Badge></p></div>
+                {order.payment_reference && <div className="col-span-2"><span className="text-muted-foreground">Reference</span><p className="font-mono text-xs">{order.payment_reference}</p></div>}
+                {order.payment_verified_by && <div><span className="text-muted-foreground">Verified At</span><p className="text-xs">{order.payment_verified_at ? formatRelativeTime(order.payment_verified_at) : "—"}</p></div>}
+                {order.payment_rejection_reason && <div className="col-span-2"><span className="text-muted-foreground">Rejection Reason</span><p className="text-xs text-destructive">{order.payment_rejection_reason}</p></div>}
+              </div>
+              {order.payment_proof_url && (
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Payment Proof</p>
+                  <img src={order.payment_proof_url} alt="Payment proof" className="rounded-lg border max-h-48 object-cover cursor-pointer" onClick={() => setPaymentDialog(true)} />
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Status Timeline */}
+          <Card>
+            <CardHeader><CardTitle className="text-sm">Status Timeline</CardTitle></CardHeader>
+            <CardContent>
+              <OrderStatusTimeline orderId={id!} />
             </CardContent>
           </Card>
         </div>
 
+        {/* Right Column */}
         <div className="space-y-4">
+          {/* Customer */}
           <Card>
             <CardHeader><CardTitle className="text-sm">Customer</CardTitle></CardHeader>
             <CardContent className="text-sm space-y-1">
               <p className="font-medium">{(order as any).customers?.company_name || (order as any).customers?.name || "—"}</p>
               <p className="text-muted-foreground">{(order as any).customers?.email}</p>
               <p className="text-muted-foreground">{(order as any).customers?.phone}</p>
+              {order.contact_name && <p className="text-xs mt-2"><span className="text-muted-foreground">Contact:</span> {order.contact_name} {order.contact_phone && `· ${order.contact_phone}`}</p>}
             </CardContent>
           </Card>
 
+          {/* Delivery Address */}
           <Card>
-            <CardHeader><CardTitle className="text-sm">Summary</CardTitle></CardHeader>
-            <CardContent className="text-sm space-y-2">
-              <div className="flex justify-between"><span>Subtotal</span><span>{Number(order.subtotal || 0).toLocaleString()}</span></div>
-              <div className="flex justify-between"><span>Shipping</span><span>{Number(order.shipping_cost).toLocaleString()}</span></div>
-              <div className="flex justify-between"><span>Tax</span><span>{Number(order.tax).toLocaleString()}</span></div>
-              <div className="flex justify-between"><span>Discount</span><span>-{Number(order.discount).toLocaleString()}</span></div>
-              <div className="flex justify-between font-bold border-t pt-2"><span>Total</span><span>{Number(order.total || 0).toLocaleString()} {order.currency}</span></div>
+            <CardHeader><CardTitle className="text-sm">Delivery</CardTitle></CardHeader>
+            <CardContent className="text-sm space-y-1">
+              {address ? (
+                <>
+                  <p>{address.address_line}</p>
+                  <p className="text-muted-foreground">{[address.township, address.city, address.region].filter(Boolean).join(", ")}</p>
+                  {address.contact_phone && <p className="text-muted-foreground">Tel: {address.contact_phone}</p>}
+                  {address.delivery_notes && <p className="text-xs mt-2 p-2 bg-muted rounded">{address.delivery_notes}</p>}
+                </>
+              ) : (
+                <p className="text-muted-foreground">No delivery address</p>
+              )}
+              {order.delivery_zone && <Badge variant="outline" className="text-[10px] mt-2">{order.delivery_zone}</Badge>}
             </CardContent>
           </Card>
 
+          {/* Internal Notes */}
           <Card>
             <CardHeader><CardTitle className="text-sm">Internal Notes</CardTitle></CardHeader>
             <CardContent className="space-y-2">
@@ -151,73 +240,27 @@ export default function OrderDetail() {
             </CardContent>
           </Card>
 
-          <DeliveryAssignmentCard orderId={id!} staffRole={staff?.role || ""} />
+          {/* Customer Notes */}
+          {order.customer_notes && (
+            <Card>
+              <CardHeader><CardTitle className="text-sm">Customer Notes</CardTitle></CardHeader>
+              <CardContent><p className="text-sm text-muted-foreground">{order.customer_notes}</p></CardContent>
+            </Card>
+          )}
         </div>
       </div>
+
+      <PaymentVerificationDialog
+        open={paymentDialog}
+        onOpenChange={setPaymentDialog}
+        order={order}
+        mode="view"
+      />
+      <DeliveryAssignDialog
+        open={deliveryDialog}
+        onOpenChange={setDeliveryDialog}
+        order={order}
+      />
     </div>
-  );
-}
-
-function DeliveryAssignmentCard({ orderId, staffRole }: { orderId: string; staffRole: string }) {
-  const queryClient = useQueryClient();
-  const canAssign = ["super_admin", "admin", "manager"].includes(staffRole);
-
-  const { data: assignment } = useQuery({
-    queryKey: ["delivery-assignment", orderId],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("delivery_assignments")
-        .select("*, staff_profiles!delivery_assignments_driver_id_fkey(full_name, email)")
-        .eq("order_id", orderId)
-        .maybeSingle();
-      return data;
-    },
-  });
-
-  const { data: drivers } = useQuery({
-    queryKey: ["delivery-drivers"],
-    queryFn: async () => {
-      const { data } = await supabase.from("staff_profiles").select("id, full_name").eq("role", "delivery").eq("is_active", true);
-      return data || [];
-    },
-    enabled: canAssign,
-  });
-
-  const assignMutation = useMutation({
-    mutationFn: async (driverId: string) => {
-      const { error } = await supabase.from("delivery_assignments").insert({ order_id: orderId, driver_id: driverId } as any);
-      if (error) throw error;
-    },
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["delivery-assignment", orderId] }); toast.success("Delivery assigned"); },
-    onError: (e: any) => toast.error(e.message),
-  });
-
-  if (!canAssign && !assignment) return null;
-
-  return (
-    <Card>
-      <CardHeader><CardTitle className="text-sm">Delivery Assignment</CardTitle></CardHeader>
-      <CardContent className="space-y-2">
-        {assignment ? (
-          <div className="text-sm space-y-1">
-            <p><span className="text-muted-foreground">Driver:</span> {(assignment as any).staff_profiles?.full_name || "—"}</p>
-            <p><span className="text-muted-foreground">Status:</span> <Badge variant="secondary">{assignment.status}</Badge></p>
-            {assignment.delivered_at && <p className="text-xs text-muted-foreground">Delivered: {new Date(assignment.delivered_at).toLocaleString()}</p>}
-          </div>
-        ) : canAssign ? (
-          <div className="space-y-2">
-            <select
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              defaultValue=""
-              onChange={e => { if (e.target.value) assignMutation.mutate(e.target.value); }}
-              disabled={assignMutation.isPending}
-            >
-              <option value="" disabled>Select delivery driver...</option>
-              {(drivers || []).map((d: any) => <option key={d.id} value={d.id}>{d.full_name}</option>)}
-            </select>
-          </div>
-        ) : null}
-      </CardContent>
-    </Card>
   );
 }

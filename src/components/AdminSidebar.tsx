@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import {
   LayoutDashboard, Package, Grid3X3, Tag, ShoppingCart, FileText,
   Users, Image, UserCog, BarChart3, Activity, Settings, LogOut, Truck,
@@ -5,6 +6,7 @@ import {
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useStaff, hasPermission } from "@/contexts/StaffContext";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
   SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
@@ -32,7 +34,7 @@ const navGroups = [
   {
     label: "Sales",
     items: [
-      { title: "Orders", url: "/orders", icon: ShoppingCart, module: "orders" },
+      { title: "Orders", url: "/orders", icon: ShoppingCart, module: "orders", badgeKey: "orders" },
       { title: "Quotes", url: "/quotes", icon: FileText, module: "quotes" },
       { title: "Customers", url: "/customers", icon: Users, module: "customers" },
       { title: "Reviews", url: "/reviews", icon: MessageSquare, module: "reviews" },
@@ -69,6 +71,18 @@ export function AdminSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const role = staff?.role || "viewer";
+  const [orderBadge, setOrderBadge] = useState(0);
+
+  useEffect(() => {
+    if (!staff) return;
+    const fetchCount = async () => {
+      const { count } = await supabase.from("orders").select("*", { count: "exact", head: true }).eq("status", "payment_under_review");
+      setOrderBadge(count || 0);
+    };
+    fetchCount();
+    const interval = setInterval(fetchCount, 30000);
+    return () => clearInterval(interval);
+  }, [staff]);
 
   const filteredGroups = navGroups
     .map(group => ({
@@ -106,7 +120,16 @@ export function AdminSidebar() {
                         activeClassName="bg-sidebar-accent text-sidebar-foreground border-l-2 border-sidebar-primary"
                       >
                         <item.icon className="h-4 w-4 shrink-0" />
-                        {!collapsed && <span>{item.title}</span>}
+                        {!collapsed && (
+                          <span className="flex-1 flex items-center justify-between">
+                            {item.title}
+                            {"badgeKey" in item && item.badgeKey === "orders" && orderBadge > 0 && (
+                              <span className="ml-auto bg-sidebar-primary text-sidebar-primary-foreground text-[9px] font-bold rounded-full h-4 min-w-[16px] flex items-center justify-center px-1">
+                                {orderBadge}
+                              </span>
+                            )}
+                          </span>
+                        )}
                       </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
