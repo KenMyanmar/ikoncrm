@@ -146,8 +146,23 @@ export default function OrderDetail() {
             </>
           )}
           {order.status === "out_for_delivery" && (
-            <Button size="sm" className="bg-success hover:bg-success/90 text-success-foreground" onClick={() => markDeliveredMutation.mutate()} disabled={markDeliveredMutation.isPending}>
-              <CheckCircle className="h-4 w-4 mr-1" /> Mark Delivered
+            <>
+              <Button size="sm" className="bg-success hover:bg-success/90 text-success-foreground" onClick={() => markDeliveredMutation.mutate()} disabled={markDeliveredMutation.isPending}>
+                <CheckCircle className="h-4 w-4 mr-1" /> Mark Delivered
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => { setPreselectedTemplate("out_for_delivery"); setSendMessageDialog(true); }}>
+                <Send className="h-4 w-4 mr-1" /> Send Update
+              </Button>
+            </>
+          )}
+          {order.status === "payment_rejected" && (
+            <Button size="sm" variant="outline" onClick={() => { setPreselectedTemplate("payment_rejected"); setSendMessageDialog(true); }}>
+              <Mail className="h-4 w-4 mr-1" /> Notify Customer
+            </Button>
+          )}
+          {order.status === "delivered" && (
+            <Button size="sm" variant="outline" onClick={() => { setPreselectedTemplate("order_delivered"); setSendMessageDialog(true); }}>
+              <Mail className="h-4 w-4 mr-1" /> Send Confirmation
             </Button>
           )}
         </div>
