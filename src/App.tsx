@@ -35,6 +35,7 @@ import CreateOrder from "@/pages/CreateOrder";
 import RiskRevenue from "@/pages/RiskRevenue";
 import Automations from "@/pages/Automations";
 import CrmTasks from "@/pages/CrmTasks";
+import WeeklyReview from "@/pages/WeeklyReview";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
