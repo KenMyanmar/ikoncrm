@@ -64,6 +64,7 @@ const navGroups = [
       { title: "Risk & Revenue", url: "/risk", icon: Shield, module: "reports" },
       { title: "Automations", url: "/automations", icon: Zap, module: "reports" },
       { title: "Reports", url: "/reports", icon: BarChart3, module: "reports" },
+      { title: "Weekly Review", url: "/reports/weekly", icon: BarChart3, module: "reports" },
       { title: "Activity Log", url: "/activity", icon: Activity, module: "activity" },
       { title: "Settings", url: "/settings", icon: Settings, module: "settings" },
     ],
