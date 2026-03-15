@@ -76,15 +76,18 @@ export function AdminSidebar() {
   const collapsed = state === "collapsed";
   const role = staff?.role || "viewer";
   const [orderBadge, setOrderBadge] = useState(0);
+  const [taskBadge, setTaskBadge] = useState(0);
 
   useEffect(() => {
     if (!staff) return;
-    const fetchCount = async () => {
-      const { count } = await supabase.from("orders").select("*", { count: "exact", head: true }).eq("status", "payment_under_review");
-      setOrderBadge(count || 0);
+    const fetchCounts = async () => {
+      const { count: oCount } = await supabase.from("orders").select("*", { count: "exact", head: true }).eq("status", "payment_under_review");
+      setOrderBadge(oCount || 0);
+      const { count: tCount } = await supabase.from("crm_tasks").select("*", { count: "exact", head: true }).in("status", ["open", "in_progress"]).eq("assigned_to", staff.id);
+      setTaskBadge(tCount || 0);
     };
-    fetchCount();
-    const interval = setInterval(fetchCount, 30000);
+    fetchCounts();
+    const interval = setInterval(fetchCounts, 30000);
     return () => clearInterval(interval);
   }, [staff]);
 
