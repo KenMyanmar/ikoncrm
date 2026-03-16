@@ -86,8 +86,7 @@ export function PaymentVerificationDialog({ open, onOpenChange, order, mode }: P
         reason: `Payment rejected: ${reason}`,
       } as any);
       if (staff) await logActivity(staff.id, "order_rejected_payment", "order", order.id, order.order_number, { reason });
-      // Auto-send communication
-      await autoSendTemplate("payment_rejected", order, staff, supabase);
+      // Auto-send handled by DB trigger trg_auto_send_communication
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-orders"] });

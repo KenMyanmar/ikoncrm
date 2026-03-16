@@ -13,8 +13,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { Zap, Plus, Pencil, Clock, Activity, ListTodo } from "lucide-react";
+import { Zap, Plus, Pencil, Clock, Activity, ListTodo, Monitor, RefreshCw, CheckCircle, XCircle, Copy } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 type AutomationRule = {
@@ -91,6 +93,241 @@ const emptyRule = (): Partial<AutomationRule> => ({
   is_active: true,
   priority: 0,
 });
+
+// ── Monitor Tab ──────────────────────────────────────────────
+
+function AutomationMonitor() {
+  const [hours, setHours] = useState(24);
+  const TIME_OPTIONS = [
+    { value: 1, label: "1h" },
+    { value: 6, label: "6h" },
+    { value: 24, label: "24h" },
+    { value: 168, label: "7d" },
+  ];
+  const [resultFilter, setResultFilter] = useState<string>("all");
+  const [triggerFilter, setTriggerFilter] = useState<string>("all");
+
+  const { data: stats, isLoading: statsLoading } = useQuery({
+    queryKey: ["automation_stats", hours],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("get_automation_stats", { p_hours: hours });
+      if (error) throw error;
+      return data as any;
+    },
+    refetchInterval: 30_000,
+  });
+
+  const { data: logs = [], isLoading: logsLoading } = useQuery({
+    queryKey: ["automation_execution_log", hours, resultFilter, triggerFilter],
+    queryFn: async () => {
+      let q = supabase
+        .from("automation_execution_log")
+        .select("*, orders(order_number)")
+        .gte("created_at", new Date(Date.now() - hours * 3600_000).toISOString())
+        .order("created_at", { ascending: false })
+        .limit(100);
+      if (resultFilter !== "all") q = q.eq("action_result", resultFilter);
+      if (triggerFilter !== "all") q = q.eq("trigger_type", triggerFilter);
+      const { data } = await q;
+      return data || [];
+    },
+    refetchInterval: 30_000,
+  });
+
+  const summary = stats || {};
+  const autoSend = summary.auto_send || { success: 0, failed: 0, deduped: 0 };
+  const statusRules = summary.status_rules || { success: 0, failed: 0, deduped: 0 };
+  const timeRules = summary.time_rules || { success: 0, failed: 0, deduped: 0 };
+  const total = (autoSend.success + autoSend.failed + autoSend.deduped +
+    statusRules.success + statusRules.failed + statusRules.deduped +
+    timeRules.success + timeRules.failed + timeRules.deduped);
+  const ruleBreakdown: any[] = summary.rule_breakdown || [];
+  const templateBreakdown: any[] = summary.template_breakdown || [];
+
+  const resultBadge = (result: string) => {
+    switch (result) {
+      case "success": return <Badge className="bg-emerald-500/15 text-emerald-700 border-0 text-[10px]">Success</Badge>;
+      case "failed": return <Badge variant="destructive" className="text-[10px]">Failed</Badge>;
+      case "duplicate_prevented": return <Badge className="bg-amber-500/15 text-amber-700 border-0 text-[10px]">Deduped</Badge>;
+      default: return <Badge variant="secondary" className="text-[10px]">{result}</Badge>;
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Time range */}
+      <div className="flex items-center gap-2">
+        {TIME_OPTIONS.map(t => (
+          <Button
+            key={t.value}
+            size="sm"
+            variant={hours === t.value ? "default" : "outline"}
+            onClick={() => setHours(t.value)}
+          >
+            {t.label}
+          </Button>
+        ))}
+        <span className="text-xs text-muted-foreground ml-2">Auto-refreshes every 30s</span>
+      </div>
+
+      {/* Summary cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card><CardContent className="p-4">
+          <p className="text-xs text-muted-foreground mb-1">Auto-Send (DB Trigger)</p>
+          <p className="text-xl font-bold">{autoSend.success} <span className="text-sm font-normal text-muted-foreground">sent</span></p>
+          <div className="flex gap-3 text-xs text-muted-foreground mt-1">
+            <span className="text-destructive">{autoSend.failed} failed</span>
+            <span className="text-amber-600">{autoSend.deduped} deduped</span>
+          </div>
+        </CardContent></Card>
+        <Card><CardContent className="p-4">
+          <p className="text-xs text-muted-foreground mb-1">Status Rules (DB Trigger)</p>
+          <p className="text-xl font-bold">{statusRules.success} <span className="text-sm font-normal text-muted-foreground">fired</span></p>
+          <div className="flex gap-3 text-xs text-muted-foreground mt-1">
+            <span className="text-destructive">{statusRules.failed} failed</span>
+            <span className="text-amber-600">{statusRules.deduped} deduped</span>
+          </div>
+        </CardContent></Card>
+        <Card><CardContent className="p-4">
+          <p className="text-xs text-muted-foreground mb-1">Time Rules (Client)</p>
+          <p className="text-xl font-bold">{timeRules.success} <span className="text-sm font-normal text-muted-foreground">fired</span></p>
+          <div className="flex gap-3 text-xs text-muted-foreground mt-1">
+            <span className="text-destructive">{timeRules.failed} failed</span>
+          </div>
+        </CardContent></Card>
+        <Card><CardContent className="p-4">
+          <p className="text-xs text-muted-foreground mb-1">Total Executions</p>
+          <p className="text-xl font-bold">{total}</p>
+          <p className="text-xs text-muted-foreground mt-1">Last {hours}h</p>
+        </CardContent></Card>
+      </div>
+
+      {/* Breakdowns */}
+      {ruleBreakdown.length > 0 && (
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-sm font-semibold mb-3">Rule Breakdown</p>
+            <Table>
+              <TableHeader><TableRow>
+                <TableHead>Rule Name</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead className="text-right">Success</TableHead>
+                <TableHead className="text-right">Failed</TableHead>
+                <TableHead className="text-right">Deduped</TableHead>
+              </TableRow></TableHeader>
+              <TableBody>
+                {ruleBreakdown.map((r: any, i: number) => (
+                  <TableRow key={i}>
+                    <TableCell className="font-medium">{r.rule_name || r.automation_rule_id?.slice(0, 8)}</TableCell>
+                    <TableCell><Badge variant="outline" className="text-[10px]">{r.trigger_type}</Badge></TableCell>
+                    <TableCell className="text-right text-emerald-600">{r.success || 0}</TableCell>
+                    <TableCell className="text-right text-destructive">{r.failed || 0}</TableCell>
+                    <TableCell className="text-right text-amber-600">{r.deduped || 0}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
+      {templateBreakdown.length > 0 && (
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-sm font-semibold mb-3">Template Breakdown</p>
+            <Table>
+              <TableHeader><TableRow>
+                <TableHead>Template Key</TableHead>
+                <TableHead className="text-right">Sent</TableHead>
+                <TableHead className="text-right">Failed</TableHead>
+                <TableHead className="text-right">Deduped</TableHead>
+              </TableRow></TableHeader>
+              <TableBody>
+                {templateBreakdown.map((t: any, i: number) => (
+                  <TableRow key={i}>
+                    <TableCell className="font-mono text-xs">{t.template_key}</TableCell>
+                    <TableCell className="text-right text-emerald-600">{t.success || 0}</TableCell>
+                    <TableCell className="text-right text-destructive">{t.failed || 0}</TableCell>
+                    <TableCell className="text-right text-amber-600">{t.deduped || 0}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Execution Log */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-sm font-semibold">Execution Log</p>
+            <div className="flex gap-2">
+              <Select value={resultFilter} onValueChange={setResultFilter}>
+                <SelectTrigger className="h-8 w-[130px] text-xs"><SelectValue placeholder="Result" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Results</SelectItem>
+                  <SelectItem value="success">Success</SelectItem>
+                  <SelectItem value="failed">Failed</SelectItem>
+                  <SelectItem value="duplicate_prevented">Deduped</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={triggerFilter} onValueChange={setTriggerFilter}>
+                <SelectTrigger className="h-8 w-[140px] text-xs"><SelectValue placeholder="Trigger" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Triggers</SelectItem>
+                  <SelectItem value="auto_send">Auto-Send</SelectItem>
+                  <SelectItem value="status_change_rule">Status Rule</SelectItem>
+                  <SelectItem value="time_based_rule">Time Rule</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          {logsLoading ? (
+            <p className="text-sm text-muted-foreground">Loading…</p>
+          ) : logs.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-6">No executions in this time range.</p>
+          ) : (
+            <div className="max-h-[400px] overflow-y-auto">
+              <Table>
+                <TableHeader><TableRow>
+                  <TableHead>Time</TableHead>
+                  <TableHead>Trigger</TableHead>
+                  <TableHead>Order</TableHead>
+                  <TableHead>Action</TableHead>
+                  <TableHead>Result</TableHead>
+                  <TableHead>Error</TableHead>
+                </TableRow></TableHeader>
+                <TableBody>
+                  {logs.map((log: any) => (
+                    <TableRow key={log.id}>
+                      <TableCell className="text-xs whitespace-nowrap">
+                        {formatDistanceToNow(new Date(log.created_at), { addSuffix: true })}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="text-[10px]">{log.trigger_type}</Badge>
+                      </TableCell>
+                      <TableCell className="font-mono text-xs">
+                        {(log.orders as any)?.order_number || "—"}
+                      </TableCell>
+                      <TableCell className="text-xs">{log.action_type}</TableCell>
+                      <TableCell>{resultBadge(log.action_result)}</TableCell>
+                      <TableCell className="text-xs text-destructive max-w-[200px] truncate">
+                        {log.error_message || "—"}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// ── Main Page ────────────────────────────────────────────────
 
 export default function Automations() {
   const { staff } = useStaff();
@@ -188,76 +425,96 @@ export default function Automations() {
         </Button>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
-        <Card><CardContent className="p-4 flex items-center gap-3">
-          <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center"><Zap className="h-5 w-5 text-primary" /></div>
-          <div><p className="text-2xl font-bold">{activeCount}</p><p className="text-xs text-muted-foreground">Active Rules</p></div>
-        </CardContent></Card>
-        <Card><CardContent className="p-4 flex items-center gap-3">
-          <div className="h-10 w-10 rounded-lg bg-accent/10 flex items-center justify-center"><Activity className="h-5 w-5 text-accent" /></div>
-          <div><p className="text-2xl font-bold">{todayRuns}</p><p className="text-xs text-muted-foreground">Total Runs</p></div>
-        </CardContent></Card>
-        <Card><CardContent className="p-4 flex items-center gap-3">
-          <div className="h-10 w-10 rounded-lg bg-warning/10 flex items-center justify-center"><ListTodo className="h-5 w-5 text-warning" /></div>
-          <div><p className="text-2xl font-bold">{taskCount}</p><p className="text-xs text-muted-foreground">Pending Tasks</p></div>
-        </CardContent></Card>
-      </div>
+      <Tabs defaultValue="rules">
+        <TabsList>
+          <TabsTrigger value="rules">
+            <Zap className="h-4 w-4 mr-1.5" /> Rules
+          </TabsTrigger>
+          <TabsTrigger value="monitor">
+            <Monitor className="h-4 w-4 mr-1.5" /> Monitor
+          </TabsTrigger>
+        </TabsList>
 
-      {/* Rules List */}
-      <div className="space-y-3">
-        {isLoading && <p className="text-muted-foreground text-sm">Loading rules...</p>}
-        {rules.map(rule => (
-          <Card key={rule.id} className={!rule.is_active ? "opacity-60" : ""}>
-            <CardContent className="p-4">
-              <div className="flex items-start justify-between">
-                <div className="flex items-start gap-3 flex-1 min-w-0">
-                  <div className="h-8 w-8 rounded-md bg-primary/10 flex items-center justify-center mt-0.5 shrink-0">
-                    <Zap className="h-4 w-4 text-primary" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-semibold text-foreground">{rule.name}</h3>
-                      <Badge variant={rule.is_active ? "default" : "secondary"} className="text-[10px]">
-                        {rule.is_active ? "Active" : "Paused"}
-                      </Badge>
+        <TabsContent value="rules">
+          {/* Stats */}
+          <div className="grid grid-cols-3 gap-4 mb-6">
+            <Card><CardContent className="p-4 flex items-center gap-3">
+              <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center"><Zap className="h-5 w-5 text-primary" /></div>
+              <div><p className="text-2xl font-bold">{activeCount}</p><p className="text-xs text-muted-foreground">Active Rules</p></div>
+            </CardContent></Card>
+            <Card><CardContent className="p-4 flex items-center gap-3">
+              <div className="h-10 w-10 rounded-lg bg-accent/10 flex items-center justify-center"><Activity className="h-5 w-5 text-accent" /></div>
+              <div><p className="text-2xl font-bold">{todayRuns}</p><p className="text-xs text-muted-foreground">Total Runs</p></div>
+            </CardContent></Card>
+            <Card><CardContent className="p-4 flex items-center gap-3">
+              <div className="h-10 w-10 rounded-lg bg-warning/10 flex items-center justify-center"><ListTodo className="h-5 w-5 text-warning" /></div>
+              <div><p className="text-2xl font-bold">{taskCount}</p><p className="text-xs text-muted-foreground">Pending Tasks</p></div>
+            </CardContent></Card>
+          </div>
+
+          {/* Rules List */}
+          <div className="space-y-3">
+            {isLoading && <p className="text-muted-foreground text-sm">Loading rules...</p>}
+            {rules.map(rule => (
+              <Card key={rule.id} className={!rule.is_active ? "opacity-60" : ""}>
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-start gap-3 flex-1 min-w-0">
+                      <div className="h-8 w-8 rounded-md bg-primary/10 flex items-center justify-center mt-0.5 shrink-0">
+                        <Zap className="h-4 w-4 text-primary" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold text-foreground">{rule.name}</h3>
+                          <Badge variant={rule.is_active ? "default" : "secondary"} className="text-[10px]">
+                            {rule.is_active ? "Active" : "Paused"}
+                          </Badge>
+                          {rule.trigger_type === "status_change" && (
+                            <Badge variant="outline" className="text-[10px]">DB Trigger</Badge>
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground mt-1">When: {describeTrigger(rule)}</p>
+                        <p className="text-sm text-muted-foreground">Then: {describeAction(rule)}</p>
+                        {rule.conditions && Object.keys(rule.conditions).length > 0 && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Conditions: {Object.entries(rule.conditions).filter(([, v]) => v).map(([k, v]) => `${k}: ${v}`).join(", ")}
+                          </p>
+                        )}
+                        <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                          <span className="flex items-center gap-1"><Activity className="h-3 w-3" /> {rule.run_count || 0} runs</span>
+                          {rule.last_run_at && (
+                            <span className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" /> {formatDistanceToNow(new Date(rule.last_run_at), { addSuffix: true })}
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                    <p className="text-sm text-muted-foreground mt-1">When: {describeTrigger(rule)}</p>
-                    <p className="text-sm text-muted-foreground">Then: {describeAction(rule)}</p>
-                    {rule.conditions && Object.keys(rule.conditions).length > 0 && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Conditions: {Object.entries(rule.conditions).filter(([, v]) => v).map(([k, v]) => `${k}: ${v}`).join(", ")}
-                      </p>
-                    )}
-                    <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1"><Activity className="h-3 w-3" /> {rule.run_count || 0} runs</span>
-                      {rule.last_run_at && (
-                        <span className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" /> {formatDistanceToNow(new Date(rule.last_run_at), { addSuffix: true })}
-                        </span>
-                      )}
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Button variant="ghost" size="sm" onClick={() => openEditor(rule)}>
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                      <Switch
+                        checked={rule.is_active}
+                        onCheckedChange={(checked) => toggleMutation.mutate({ id: rule.id, is_active: checked })}
+                      />
                     </div>
                   </div>
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <Button variant="ghost" size="sm" onClick={() => openEditor(rule)}>
-                    <Pencil className="h-3.5 w-3.5" />
-                  </Button>
-                  <Switch
-                    checked={rule.is_active}
-                    onCheckedChange={(checked) => toggleMutation.mutate({ id: rule.id, is_active: checked })}
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-        {!isLoading && rules.length === 0 && (
-          <Card><CardContent className="p-8 text-center text-muted-foreground">
-            No automation rules yet. Click "New Rule" to create one.
-          </CardContent></Card>
-        )}
-      </div>
+                </CardContent>
+              </Card>
+            ))}
+            {!isLoading && rules.length === 0 && (
+              <Card><CardContent className="p-8 text-center text-muted-foreground">
+                No automation rules yet. Click "New Rule" to create one.
+              </CardContent></Card>
+            )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="monitor">
+          <AutomationMonitor />
+        </TabsContent>
+      </Tabs>
 
       {/* Rule Editor Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -375,7 +632,7 @@ export default function Automations() {
                       </Select>
                     </div>
                     <div className="space-y-1">
-                      <Label className="text-sm">Title (supports &#123;&#123;order_number&#125;&#125;)</Label>
+                      <Label className="text-sm">Title (supports {"{{order_number}}"})</Label>
                       <Input value={editRule.action_config?.title || ""} onChange={e => updateField("action_config.title", e.target.value)} />
                     </div>
                     <div className="space-y-1">
