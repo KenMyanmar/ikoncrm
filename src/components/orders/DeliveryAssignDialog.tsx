@@ -12,23 +12,25 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
-import { Truck } from "lucide-react";
+import { Truck, AlertTriangle } from "lucide-react";
 
 interface DeliveryAssignDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  order: any;
+  order?: any;
+  orderIds?: string[];
+  onSuccess?: () => void;
 }
 
 function getDefaultDeliveryDate(): string {
   const now = new Date();
-  // If past 2pm, default to tomorrow
   const target = now.getHours() >= 14 ? new Date(now.getTime() + 86400000) : now;
   return target.toISOString().split("T")[0];
 }
 
-export function DeliveryAssignDialog({ open, onOpenChange, order }: DeliveryAssignDialogProps) {
+export function DeliveryAssignDialog({ open, onOpenChange, order, orderIds, onSuccess }: DeliveryAssignDialogProps) {
   const { staff } = useStaff();
   const queryClient = useQueryClient();
   const [driverId, setDriverId] = useState("");
@@ -36,10 +38,17 @@ export function DeliveryAssignDialog({ open, onOpenChange, order }: DeliveryAssi
   const [priority, setPriority] = useState("normal");
   const [expectedDate, setExpectedDate] = useState(getDefaultDeliveryDate);
 
+  const isBatch = orderIds && orderIds.length > 0;
+  const effectiveIds = isBatch ? orderIds : order ? [order.id] : [];
+
   const { data: drivers } = useQuery({
     queryKey: ["delivery-drivers"],
     queryFn: async () => {
-      const { data } = await supabase.from("staff_profiles").select("id, full_name").eq("role", "delivery").eq("is_active", true);
+      const { data } = await supabase
+        .from("staff_profiles")
+        .select("id, full_name, role")
+        .in("role", ["delivery", "admin", "manager", "super_admin"])
+        .eq("is_active", true);
       return data || [];
     },
     enabled: open,
@@ -48,64 +57,90 @@ export function DeliveryAssignDialog({ open, onOpenChange, order }: DeliveryAssi
   const assignMutation = useMutation({
     mutationFn: async () => {
       if (!driverId) throw new Error("Please select a driver");
+      if (effectiveIds.length === 0) throw new Error("No orders to assign");
+
       const driverName = drivers?.find(d => d.id === driverId)?.full_name || "driver";
 
-      // Insert delivery assignment
-      const { error: aErr } = await supabase.from("delivery_assignments").insert({
-        order_id: order.id,
-        driver_id: driverId,
-        delivery_notes: notes || null,
-        estimated_arrival: expectedDate ? new Date(expectedDate).toISOString() : null,
-      } as any);
-      if (aErr) throw aErr;
+      for (const orderId of effectiveIds) {
+        // Insert delivery assignment
+        const { error: aErr } = await supabase.from("delivery_assignments").insert({
+          order_id: orderId,
+          driver_id: driverId,
+          delivery_notes: notes || null,
+          estimated_arrival: expectedDate ? new Date(expectedDate).toISOString() : null,
+        } as any);
+        if (aErr) throw aErr;
 
-      // Update order
-      const { error: oErr } = await supabase.from("orders").update({
-        status: "out_for_delivery",
-        shipped_at: new Date().toISOString(),
-        priority: priority,
-        estimated_delivery: expectedDate || null,
-      } as any).eq("id", order.id);
-      if (oErr) throw oErr;
+        // Update order
+        const { error: oErr } = await supabase.from("orders").update({
+          status: "out_for_delivery",
+          shipped_at: new Date().toISOString(),
+          priority: priority,
+          estimated_delivery: expectedDate || null,
+        } as any).eq("id", orderId);
+        if (oErr) throw oErr;
 
-      // Status history
-      await supabase.from("order_status_history").insert({
-        order_id: order.id,
-        from_status: order.status,
-        to_status: "out_for_delivery",
-        changed_by: staff?.id,
-        changed_by_role: staff?.role,
-        reason: `Assigned to ${driverName} (${priority})`,
-      } as any);
+        // Status history
+        await supabase.from("order_status_history").insert({
+          order_id: orderId,
+          from_status: "packed",
+          to_status: "out_for_delivery",
+          changed_by: staff?.id,
+          changed_by_role: staff?.role,
+          reason: isBatch
+            ? `Batch assigned to ${driverName} (${priority})`
+            : `Assigned to ${driverName} (${priority})`,
+        } as any);
 
-      // Tracking log entry
-      await supabase.from("delivery_tracking_log").insert({
-        assignment_id: (await supabase.from("delivery_assignments").select("id").eq("order_id", order.id).order("created_at", { ascending: false }).limit(1).single()).data?.id,
-        status: "assigned",
-        note: `Assigned to ${driverName} by ${staff?.full_name}`,
-      } as any);
+        // Tracking log entry
+        const { data: assignmentData } = await supabase
+          .from("delivery_assignments")
+          .select("id")
+          .eq("order_id", orderId)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .single();
 
-      // Notify driver
-      const address = order.customer_addresses;
-      const addressStr = address ? `${address.address_line}, ${address.township || ""}` : "Address pending";
-      await (supabase as any).from("staff_notifications").insert({
-        staff_id: driverId,
-        type: "order_assigned",
-        title: `New delivery: ${order.order_number}`,
-        body: `${addressStr} — ${Number(order.total || 0).toLocaleString()} MMK (${order.payment_method || "N/A"})`,
-        link: "/my-deliveries",
-      });
+        if (assignmentData) {
+          await supabase.from("delivery_tracking_log").insert({
+            assignment_id: assignmentData.id,
+            status: "assigned",
+            note: `Assigned to ${driverName} by ${staff?.full_name}`,
+          } as any);
+        }
+
+        // Notify driver
+        await (supabase as any).from("staff_notifications").insert({
+          staff_id: driverId,
+          type: "order_assigned",
+          title: isBatch ? `Batch delivery: ${effectiveIds.length} orders` : `New delivery assigned`,
+          body: `Priority: ${priority}`,
+          link: "/my-deliveries",
+        });
+      }
 
       // Activity log
       if (staff) {
-        await logActivity(staff.id, "order_assigned_delivery", "order", order.id, order.order_number, { driver: driverName, priority });
+        if (isBatch) {
+          await logActivity(staff.id, "order_batch_assigned_delivery", "order", undefined, undefined, {
+            driver: driverName,
+            priority,
+            count: effectiveIds.length,
+            orderIds: effectiveIds,
+          });
+        } else {
+          await logActivity(staff.id, "order_assigned_delivery", "order", order?.id, order?.order_number, {
+            driver: driverName,
+            priority,
+          });
+        }
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
-      queryClient.invalidateQueries({ queryKey: ["admin-order", order.id] });
       queryClient.invalidateQueries({ queryKey: ["delivery-assignment"] });
-      toast.success("Delivery assigned!");
+      toast.success(isBatch ? `${effectiveIds.length} orders assigned!` : "Delivery assigned!");
+      onSuccess?.();
       onOpenChange(false);
     },
     onError: (e: any) => toast.error(e.message),
@@ -116,19 +151,33 @@ export function DeliveryAssignDialog({ open, onOpenChange, order }: DeliveryAssi
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="text-base">Assign Delivery</DialogTitle>
-          <DialogDescription>{order?.order_number}</DialogDescription>
+          <DialogDescription>
+            {isBatch ? `Assigning ${effectiveIds.length} orders` : order?.order_number}
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <div>
             <Label className="mb-1 block">Delivery Driver</Label>
-            <Select value={driverId} onValueChange={setDriverId}>
-              <SelectTrigger><SelectValue placeholder="Select driver…" /></SelectTrigger>
-              <SelectContent>
-                {(drivers || []).map((d: any) => (
-                  <SelectItem key={d.id} value={d.id}>{d.full_name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {drivers && drivers.length === 0 ? (
+              <Alert>
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription className="text-xs">
+                  No delivery drivers found. Add staff with 'delivery' role in Staff Management.
+                  Admins/managers can also be assigned.
+                </AlertDescription>
+              </Alert>
+            ) : (
+              <Select value={driverId} onValueChange={setDriverId}>
+                <SelectTrigger><SelectValue placeholder="Select driver…" /></SelectTrigger>
+                <SelectContent>
+                  {(drivers || []).map((d: any) => (
+                    <SelectItem key={d.id} value={d.id}>
+                      {d.full_name} {d.role !== "delivery" ? `(${d.role})` : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
 
           <div>
@@ -161,7 +210,7 @@ export function DeliveryAssignDialog({ open, onOpenChange, order }: DeliveryAssi
 
           <Button className="w-full h-12" onClick={() => assignMutation.mutate()} disabled={assignMutation.isPending || !driverId}>
             <Truck className="h-4 w-4 mr-2" />
-            Assign & Send Out
+            {isBatch ? `Assign ${effectiveIds.length} Orders` : "Assign & Send Out"}
           </Button>
         </div>
       </DialogContent>

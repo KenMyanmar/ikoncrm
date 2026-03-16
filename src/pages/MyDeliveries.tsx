@@ -14,7 +14,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { Truck, Phone, CheckCircle, AlertTriangle, MapPin, Camera, Copy, Package } from "lucide-react";
+import { Truck, Phone, CheckCircle, AlertTriangle, MapPin, Camera, Copy, Package, Navigation } from "lucide-react";
 
 const FAILED_REASONS = [
   "Customer not available",
@@ -42,7 +42,7 @@ export default function MyDeliveries() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("delivery_assignments")
-        .select("*, orders(order_number, total, currency, status, payment_method, contact_name, contact_phone, customer_notes, delivery_zone, customer_addresses:delivery_address_id(address_line, township, city, region, contact_phone, delivery_notes))")
+        .select("*, orders(id, order_number, total, currency, status, payment_method, contact_name, contact_phone, customer_notes, delivery_zone, priority, customer_addresses:delivery_address_id(address_line, township, city, region, contact_phone, delivery_notes))")
         .eq("driver_id", staff!.id)
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -71,7 +71,7 @@ export default function MyDeliveries() {
     const todayItems = assignments.filter((a: any) => (a.assigned_at || a.created_at || "").split("T")[0] === today);
     return {
       assigned: todayItems.filter((a: any) => a.status === "assigned").length,
-      inRoute: todayItems.filter((a: any) => ["picked_up", "in_transit", "arrived"].includes(a.status)).length,
+      inRoute: todayItems.filter((a: any) => ["in_transit", "arrived"].includes(a.status)).length,
       done: todayItems.filter((a: any) => a.status === "delivered").length,
     };
   }, [assignments, today]);
@@ -79,17 +79,25 @@ export default function MyDeliveries() {
   const updateStatus = useMutation({
     mutationFn: async ({ id, status, extras, orderId, orderNumber }: { id: string; status: string; extras?: any; orderId?: string; orderNumber?: string }) => {
       const updates: any = { status, ...extras };
-      if (status === "picked_up") updates.picked_up_at = new Date().toISOString();
+      if (status === "in_transit") updates.picked_up_at = new Date().toISOString();
       if (status === "delivered") updates.delivered_at = new Date().toISOString();
 
       const { error } = await supabase.from("delivery_assignments").update(updates).eq("id", id);
       if (error) throw error;
 
       // Tracking log
+      const trackingNote = status === "in_transit"
+        ? "Package picked up from warehouse"
+        : status === "arrived"
+        ? "Arrived at delivery location"
+        : status === "delivered"
+        ? `Delivered to ${extras?.recipient_name || "customer"}`
+        : extras?.failed_reason || null;
+
       await supabase.from("delivery_tracking_log").insert({
         assignment_id: id,
         status,
-        note: extras?.driver_notes || extras?.failed_reason || null,
+        note: trackingNote,
         photo_url: extras?.proof_image_url || null,
       } as any);
 
@@ -109,15 +117,34 @@ export default function MyDeliveries() {
         if (staff) await logActivity(staff.id, "order_delivered", "order", orderId, orderNumber, { recipient: extras?.recipient_name });
       }
 
-      // If failed, notify admin
+      // If failed, notify admin + create CRM task
       if (status === "failed" && orderId) {
-        await (supabase as any).from("staff_notifications").insert({
-          staff_id: null, // will need admin notification logic
-          type: "delivery_failed",
-          title: `Delivery failed: ${orderNumber}`,
-          body: extras?.failed_reason || "Unknown reason",
-          link: `/orders/${orderId}`,
-        });
+        // Notify admins
+        const { data: admins } = await supabase
+          .from("staff_profiles")
+          .select("id")
+          .in("role", ["admin", "manager", "super_admin"])
+          .eq("is_active", true);
+
+        for (const admin of admins || []) {
+          await (supabase as any).from("staff_notifications").insert({
+            staff_id: admin.id,
+            type: "delivery_failed",
+            title: `Delivery failed: ${orderNumber}`,
+            body: extras?.failed_reason || "Unknown reason",
+            link: `/orders/${orderId}`,
+          });
+        }
+
+        // Create CRM task
+        await supabase.from("crm_tasks").insert({
+          title: `Reattempt delivery: ${orderNumber}`,
+          description: `Failed reason: ${extras?.failed_reason}`,
+          queue: "delivery",
+          priority: "high",
+          order_id: orderId,
+        } as any);
+
         if (staff) await logActivity(staff.id, "delivery_failed", "order", orderId, orderNumber, { reason: extras?.failed_reason });
       }
     },
@@ -153,32 +180,30 @@ export default function MyDeliveries() {
     });
   };
 
+  const copyAddress = (address: any) => {
+    const full = [address.address_line, address.township, address.city, address.region].filter(Boolean).join(", ");
+    navigator.clipboard.writeText(full);
+    toast.success("Address copied");
+  };
+
   const getNextAction = (a: any) => {
     const order = a.orders;
     switch (a.status) {
       case "assigned":
         return (
-          <Button className="w-full h-12 text-base" onClick={() => updateStatus.mutate({ id: a.id, status: "picked_up", orderId: order?.id })}>
+          <Button className="w-full h-12 text-base" onClick={() => updateStatus.mutate({ id: a.id, status: "in_transit", orderId: order?.id })}>
             <Package className="h-5 w-5 mr-2" /> Start Delivery
           </Button>
         );
-      case "picked_up":
       case "in_transit":
         return (
-          <div className="flex gap-2 w-full">
-            {a.status === "picked_up" && (
-              <Button className="flex-1 h-12" variant="outline" onClick={() => updateStatus.mutate({ id: a.id, status: "in_transit" })}>
-                In Transit
-              </Button>
-            )}
-            <Button className="flex-1 h-12 bg-success hover:bg-success/90 text-success-foreground" onClick={() => { setCodCollected(order?.payment_method === "cod"); setCompletionDialog(a); }}>
-              <CheckCircle className="h-5 w-5 mr-2" /> Complete
-            </Button>
-          </div>
+          <Button className="w-full h-12 text-base" variant="secondary" onClick={() => updateStatus.mutate({ id: a.id, status: "arrived", orderId: order?.id })}>
+            <Navigation className="h-5 w-5 mr-2" /> I've Arrived
+          </Button>
         );
       case "arrived":
         return (
-          <Button className="w-full h-12 bg-success hover:bg-success/90 text-success-foreground" onClick={() => { setCodCollected(order?.payment_method === "cod"); setCompletionDialog(a); }}>
+          <Button className="w-full h-12 bg-success hover:bg-success/90 text-success-foreground text-base" onClick={() => { setCodCollected(order?.payment_method === "cod"); setCompletionDialog(a); }}>
             <CheckCircle className="h-5 w-5 mr-2" /> Complete Delivery
           </Button>
         );
@@ -188,8 +213,10 @@ export default function MyDeliveries() {
   };
 
   const getBorderColor = (a: any) => {
-    if (a.orders?.payment_method === "cod") return "border-l-4 border-l-destructive";
-    if (a.orders?.priority === "urgent" || a.orders?.priority === "same_day") return "border-l-4 border-l-warning";
+    const order = a.orders;
+    if (order?.payment_method === "cod") return "border-l-4 border-l-destructive";
+    if (order?.priority === "same_day") return "border-l-4 border-l-warning";
+    if (order?.priority === "urgent") return "border-l-4 border-l-orange-500";
     return "border-l-4 border-l-success";
   };
 
@@ -232,27 +259,35 @@ export default function MyDeliveries() {
               <CardContent className="py-4 space-y-3">
                 {/* COD Banner */}
                 {isCod && (
-                  <div className="bg-destructive/10 text-destructive px-3 py-1.5 rounded-md text-sm font-semibold flex items-center gap-2">
-                    💰 COD — Collect {Number(order.total || 0).toLocaleString()} {order.currency}
+                  <div className="bg-destructive/10 text-destructive px-3 py-2 rounded-md flex items-center gap-2">
+                    <span className="text-sm">💰 COD — Collect</span>
+                    <span className="text-lg font-bold ml-auto">{Number(order.total || 0).toLocaleString()} {order.currency}</span>
                   </div>
                 )}
 
-                {/* Order Info */}
+                {/* Order Info + Priority */}
                 <div className="flex items-center justify-between">
                   <span className="font-mono font-semibold text-sm text-foreground">{order?.order_number || "—"}</span>
-                  <Badge className={`text-[10px] ${a.status === "delivered" ? "bg-success/10 text-success" : a.status === "failed" ? "bg-destructive/10 text-destructive" : "bg-primary/10 text-primary"}`}>
-                    {a.status.replace(/_/g, " ")}
-                  </Badge>
+                  <div className="flex items-center gap-1.5">
+                    {order?.priority === "same_day" && <Badge variant="destructive" className="text-[10px]">Same-Day ⚡</Badge>}
+                    {order?.priority === "urgent" && <Badge className="text-[10px] bg-orange-500">Urgent</Badge>}
+                    <Badge className={`text-[10px] ${a.status === "delivered" ? "bg-success/10 text-success" : a.status === "failed" ? "bg-destructive/10 text-destructive" : "bg-primary/10 text-primary"}`}>
+                      {a.status.replace(/_/g, " ")}
+                    </Badge>
+                  </div>
                 </div>
 
-                {/* Address */}
+                {/* Address + Copy */}
                 {address && (
                   <div className="flex items-start gap-2 text-sm">
                     <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                    <div>
+                    <div className="flex-1 min-w-0">
                       <p className="text-foreground font-medium">{address.address_line}</p>
                       <p className="text-muted-foreground text-xs">{[address.township, address.city, address.region].filter(Boolean).join(", ")}</p>
                     </div>
+                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0 shrink-0" onClick={() => copyAddress(address)}>
+                      <Copy className="h-3.5 w-3.5" />
+                    </Button>
                   </div>
                 )}
 
@@ -262,9 +297,6 @@ export default function MyDeliveries() {
                     <Phone className="h-4 w-4 text-muted-foreground" />
                     <a href={`tel:${phone}`} className="text-sm text-primary font-medium">{phone}</a>
                     <span className="text-xs text-muted-foreground">({order?.contact_name || "Customer"})</span>
-                    <Button variant="ghost" size="sm" className="h-6 w-6 p-0 ml-auto" onClick={() => { navigator.clipboard.writeText(phone); toast.success("Copied"); }}>
-                      <Copy className="h-3 w-3" />
-                    </Button>
                   </div>
                 )}
 
@@ -319,12 +351,13 @@ export default function MyDeliveries() {
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">Order: <strong>{completionDialog.orders?.order_number}</strong></p>
 
-              <div><Label>Received by</Label><Input value={recipientName} onChange={e => setRecipientName(e.target.value)} placeholder="Name of person receiving" className="mt-1" /></div>
+              <div><Label>Received by (required)</Label><Input value={recipientName} onChange={e => setRecipientName(e.target.value)} placeholder="Name of person receiving" className="mt-1" /></div>
 
               <div>
                 <Label>📸 Delivery Photo Proof</Label>
-                <Input type="file" accept="image/*" capture="environment" className="mt-1" onChange={e => {
+                <Input type="file" accept="image/jpeg,image/png,image/webp" capture="environment" className="mt-1" onChange={e => {
                   const file = e.target.files?.[0];
+                  if (file && file.size > 10 * 1024 * 1024) { toast.error("File too large (max 10MB)"); return; }
                   if (file) handlePhotoUpload(completionDialog.id, completionDialog.order_id, completionDialog.orders?.order_number, file);
                 }} />
               </div>
@@ -334,8 +367,8 @@ export default function MyDeliveries() {
               {completionDialog.orders?.payment_method === "cod" && (
                 <div className="flex items-center gap-2 p-3 bg-destructive/10 rounded-md">
                   <Checkbox id="cod-check" checked={codCollected} onCheckedChange={(c) => setCodCollected(!!c)} />
-                  <Label htmlFor="cod-check" className="text-destructive font-semibold cursor-pointer">
-                    COD: Cash collected ({Number(completionDialog.orders.total || 0).toLocaleString()} MMK)
+                  <Label htmlFor="cod-check" className="text-destructive font-bold text-lg cursor-pointer">
+                    Cash collected: {Number(completionDialog.orders.total || 0).toLocaleString()} MMK
                   </Label>
                 </div>
               )}
@@ -346,7 +379,7 @@ export default function MyDeliveries() {
                 orderId: completionDialog.order_id,
                 orderNumber: completionDialog.orders?.order_number,
                 extras: { recipient_name: recipientName, driver_notes: driverNotes, codCollected },
-              })} disabled={updateStatus.isPending}>
+              })} disabled={updateStatus.isPending || !recipientName.trim()}>
                 <CheckCircle className="h-5 w-5 mr-2" /> Confirm Delivery
               </Button>
             </div>
@@ -376,9 +409,10 @@ export default function MyDeliveries() {
 
               <div>
                 <Label>📸 Photo Evidence (optional)</Label>
-                <Input type="file" accept="image/*" capture="environment" className="mt-1" onChange={async e => {
+                <Input type="file" accept="image/jpeg,image/png,image/webp" capture="environment" className="mt-1" onChange={async e => {
                   const file = e.target.files?.[0];
                   if (!file) return;
+                  if (file.size > 10 * 1024 * 1024) { toast.error("File too large (max 10MB)"); return; }
                   const path = `${failedDialog.order_id}/failed-${Date.now()}.${file.name.split(".").pop()}`;
                   const { error } = await supabase.storage.from("delivery-proofs").upload(path, file, { upsert: true });
                   if (error) toast.error(error.message);

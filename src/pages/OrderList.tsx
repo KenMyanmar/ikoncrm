@@ -8,8 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Input } from "@/components/ui/input";
-import { Search, Package, Truck, CheckCircle, XCircle, Eye, Printer } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Package, Truck, CheckCircle, XCircle, Eye, Printer } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { STATUS_LABELS, STATUS_COLORS, PAYMENT_STATUS_COLORS, PAYMENT_METHOD_LABELS, TAB_STATUS_MAP, formatRelativeTime } from "@/components/orders/orderConstants";
@@ -30,13 +30,14 @@ export default function OrderList() {
   );
   const [paymentDialog, setPaymentDialog] = useState<{ open: boolean; order: any; mode: "view" | "approve" | "reject" }>({ open: false, order: null, mode: "view" });
   const [deliveryDialog, setDeliveryDialog] = useState<{ open: boolean; order: any }>({ open: false, order: null });
+  const [batchDialog, setBatchDialog] = useState(false);
+  const [selectedPackedIds, setSelectedPackedIds] = useState<string[]>([]);
 
   const handleViewModeChange = (mode: "kanban" | "table") => {
     setViewMode(mode);
     localStorage.setItem("order-view-mode", mode);
   };
 
-  // Orders query - fetch all active orders for kanban, or filtered for table
   const { data: orders, isLoading } = useQuery({
     queryKey: ["admin-orders", viewMode === "table" ? tab : "all", search],
     queryFn: async () => {
@@ -55,7 +56,6 @@ export default function OrderList() {
     },
   });
 
-  // Item counts
   const { data: itemCounts } = useQuery({
     queryKey: ["order-item-counts", orders?.map((o: any) => o.id)],
     queryFn: async () => {
@@ -71,11 +71,24 @@ export default function OrderList() {
     enabled: !!orders?.length,
   });
 
-  // SLA timers for kanban
   const orderIds = useMemo(() => (orders || []).map((o: any) => o.id), [orders]);
   const { slaMap } = useSlaTimers(orderIds);
 
-  // Mutations
+  const packedOrders = useMemo(() => (orders || []).filter((o: any) => o.status === "packed"), [orders]);
+  const allPackedSelected = packedOrders.length > 0 && packedOrders.every((o: any) => selectedPackedIds.includes(o.id));
+
+  const togglePackedId = (id: string) => {
+    setSelectedPackedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
+
+  const toggleAllPacked = () => {
+    if (allPackedSelected) {
+      setSelectedPackedIds([]);
+    } else {
+      setSelectedPackedIds(packedOrders.map((o: any) => o.id));
+    }
+  };
+
   const markPackedMutation = useMutation({
     mutationFn: async (order: any) => {
       const { error } = await supabase.from("orders").update({ status: "packed", packed_at: new Date().toISOString() } as any).eq("id", order.id);
@@ -132,7 +145,6 @@ export default function OrderList() {
           onAssignDelivery={handleAssignDelivery}
         />
       ) : (
-        /* Table View */
         <Card>
           <CardContent className="pt-4">
             <div className="flex flex-col sm:flex-row gap-3 mb-4">
@@ -148,10 +160,32 @@ export default function OrderList() {
               </Tabs>
             </div>
 
+            {/* Batch assign toolbar */}
+            {selectedPackedIds.length > 0 && (
+              <div className="flex items-center gap-3 mb-3 p-3 bg-primary/10 rounded-lg border border-primary/20">
+                <span className="text-sm font-medium text-foreground">
+                  {selectedPackedIds.length} packed order{selectedPackedIds.length > 1 ? "s" : ""} selected
+                </span>
+                <Button size="sm" className="ml-auto" onClick={() => setBatchDialog(true)}>
+                  <Truck className="h-4 w-4 mr-1" /> Assign to Driver
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => setSelectedPackedIds([])}>Clear</Button>
+              </div>
+            )}
+
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-10">
+                      {packedOrders.length > 0 && (
+                        <Checkbox
+                          checked={allPackedSelected}
+                          onCheckedChange={toggleAllPacked}
+                          aria-label="Select all packed"
+                        />
+                      )}
+                    </TableHead>
                     <TableHead>Order #</TableHead>
                     <TableHead>Customer</TableHead>
                     <TableHead>Items</TableHead>
@@ -164,12 +198,21 @@ export default function OrderList() {
                 </TableHeader>
                 <TableBody>
                   {isLoading ? (
-                    <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Loading…</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">Loading…</TableCell></TableRow>
                   ) : !orders?.length ? (
-                    <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">No orders found</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">No orders found</TableCell></TableRow>
                   ) : (
                     orders.map((o: any) => (
                       <TableRow key={o.id} className="group">
+                        <TableCell>
+                          {o.status === "packed" && (
+                            <Checkbox
+                              checked={selectedPackedIds.includes(o.id)}
+                              onCheckedChange={() => togglePackedId(o.id)}
+                              aria-label={`Select ${o.order_number}`}
+                            />
+                          )}
+                        </TableCell>
                         <TableCell>
                           <button onClick={() => navigate(`/orders/${o.id}`)} className="font-mono text-xs text-primary hover:underline">
                             {o.order_number}
@@ -252,6 +295,12 @@ export default function OrderList() {
         open={deliveryDialog.open}
         onOpenChange={(open) => setDeliveryDialog((p) => ({ ...p, open }))}
         order={deliveryDialog.order}
+      />
+      <DeliveryAssignDialog
+        open={batchDialog}
+        onOpenChange={setBatchDialog}
+        orderIds={selectedPackedIds}
+        onSuccess={() => setSelectedPackedIds([])}
       />
     </div>
   );
