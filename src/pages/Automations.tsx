@@ -16,7 +16,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { Zap, Plus, Pencil, Clock, Activity, ListTodo, Monitor, RefreshCw, CheckCircle, XCircle, Copy } from "lucide-react";
+import { Zap, Plus, Pencil, Clock, Activity, ListTodo, Monitor } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 type AutomationRule = {
