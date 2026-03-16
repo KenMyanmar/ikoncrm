@@ -179,8 +179,32 @@ async function executeTimeBasedRules(staffId: string) {
           run_count: (rule.run_count || 0) + 1,
         }).eq("id", rule.id);
 
+        // Log to execution log
+        await supabase.from("automation_execution_log").insert({
+          idempotency_key: `${order.id}:time:${rule.id}:${Date.now()}`,
+          trigger_type: "time_based_rule",
+          order_id: order.id,
+          automation_rule_id: rule.id,
+          action_type: rule.action_type,
+          action_result: "success",
+          metadata: { rule_name: rule.name, order_number: order.order_number } as any,
+        });
+
       } catch (err) {
         console.error(`[AutomationRunner] Failed rule=${rule.name} order=${order.order_number}`, err);
+        // Log failure to execution log
+        try {
+          await supabase.from("automation_execution_log").insert({
+            idempotency_key: `${order.id}:time:${rule.id}:fail:${Date.now()}`,
+            trigger_type: "time_based_rule",
+            order_id: order.id,
+            automation_rule_id: rule.id,
+            action_type: rule.action_type,
+            action_result: "failed",
+            error_message: err instanceof Error ? err.message : String(err),
+            metadata: { rule_name: rule.name, order_number: order.order_number } as any,
+          });
+        } catch { /* best-effort logging */ }
       }
     }
   }
