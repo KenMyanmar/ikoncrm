@@ -55,6 +55,63 @@ export type Database = {
           },
         ]
       }
+      automation_execution_log: {
+        Row: {
+          action_result: string | null
+          action_type: string
+          automation_rule_id: string | null
+          created_at: string | null
+          error_message: string | null
+          id: string
+          idempotency_key: string
+          metadata: Json | null
+          order_id: string | null
+          template_key: string | null
+          trigger_type: string
+        }
+        Insert: {
+          action_result?: string | null
+          action_type: string
+          automation_rule_id?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          idempotency_key: string
+          metadata?: Json | null
+          order_id?: string | null
+          template_key?: string | null
+          trigger_type: string
+        }
+        Update: {
+          action_result?: string | null
+          action_type?: string
+          automation_rule_id?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          idempotency_key?: string
+          metadata?: Json | null
+          order_id?: string | null
+          template_key?: string | null
+          trigger_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automation_execution_log_automation_rule_id_fkey"
+            columns: ["automation_rule_id"]
+            isOneToOne: false
+            referencedRelation: "automation_rules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "automation_execution_log_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       automation_rules: {
         Row: {
           action_config: Json
@@ -2595,6 +2652,7 @@ export type Database = {
         }
         Returns: Json
       }
+      get_automation_stats: { Args: { p_hours?: number }; Returns: Json }
       get_category_path: { Args: { cat_id: string }; Returns: string }
       get_customer_id_for_user: { Args: { _user_id: string }; Returns: string }
       get_live_kpis: { Args: never; Returns: Json }
