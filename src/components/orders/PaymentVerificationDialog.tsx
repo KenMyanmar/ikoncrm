@@ -56,8 +56,7 @@ export function PaymentVerificationDialog({ open, onOpenChange, order, mode }: P
         reason: `Payment verified by ${staff?.full_name}`,
       } as any);
       if (staff) await logActivity(staff.id, "order_approved_payment", "order", order.id, order.order_number);
-      // Auto-send communication
-      await autoSendTemplate("paid", order, staff, supabase);
+      // Auto-send handled by DB trigger trg_auto_send_communication
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
