@@ -16,7 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { Truck, Phone, CheckCircle, AlertTriangle, MapPin, Camera, Copy, Package, Navigation, Eye, RefreshCw } from "lucide-react";
-import DeliveryAssignDialog from "@/components/orders/DeliveryAssignDialog";
+import { DeliveryAssignDialog } from "@/components/orders/DeliveryAssignDialog";
 
 const FAILED_REASONS = [
   "Customer not available",
