@@ -821,6 +821,7 @@ export type Database = {
           actual_route: Json | null
           assigned_at: string | null
           attempt_number: number | null
+          codCollected: boolean | null
           created_at: string | null
           delivered_at: string | null
           delivery_notes: string | null
@@ -845,6 +846,7 @@ export type Database = {
           actual_route?: Json | null
           assigned_at?: string | null
           attempt_number?: number | null
+          codCollected?: boolean | null
           created_at?: string | null
           delivered_at?: string | null
           delivery_notes?: string | null
@@ -869,6 +871,7 @@ export type Database = {
           actual_route?: Json | null
           assigned_at?: string | null
           attempt_number?: number | null
+          codCollected?: boolean | null
           created_at?: string | null
           delivered_at?: string | null
           delivery_notes?: string | null
