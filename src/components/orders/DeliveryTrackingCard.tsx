@@ -27,6 +27,7 @@ const STATUS_COLORS: Record<string, string> = {
 
 interface DeliveryTrackingCardProps {
   orderId: string;
+  order?: { payment_method?: string | null; payment_status?: string; total?: number | null; currency?: string };
 }
 
 export function DeliveryTrackingCard({ orderId }: DeliveryTrackingCardProps) {
