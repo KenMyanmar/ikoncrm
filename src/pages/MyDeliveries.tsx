@@ -192,12 +192,15 @@ export default function MyDeliveries() {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const [proofImageUrl, setProofImageUrl] = useState<string | null>(null);
+
   const resetForms = () => {
     setRecipientName("");
     setDriverNotes("");
     setCodCollected(false);
     setFailedReason("");
     setFailedDetails("");
+    setProofImageUrl(null);
   };
 
   const handlePhotoUpload = async (assignmentId: string, orderId: string, orderNumber: string, file: File) => {
@@ -205,13 +208,8 @@ export default function MyDeliveries() {
     const { error: uploadError } = await supabase.storage.from("delivery-proofs").upload(path, file, { upsert: true });
     if (uploadError) { toast.error(uploadError.message); return; }
     const { data: { publicUrl } } = supabase.storage.from("delivery-proofs").getPublicUrl(path);
-    updateStatus.mutate({
-      id: assignmentId,
-      status: "delivered",
-      orderId,
-      orderNumber,
-      extras: { proof_image_url: publicUrl, recipient_name: recipientName, driver_notes: driverNotes, codCollected },
-    });
+    setProofImageUrl(publicUrl);
+    toast.success("Photo uploaded");
   };
 
   const copyAddress = (address: any) => {
@@ -468,7 +466,7 @@ export default function MyDeliveries() {
                   status: "delivered",
                   orderId: completionDialog.order_id,
                   orderNumber: completionDialog.orders?.order_number,
-                  extras: { recipient_name: recipientName, driver_notes: driverNotes, codCollected },
+                  extras: { recipient_name: recipientName, driver_notes: driverNotes, codCollected, proof_image_url: proofImageUrl },
                 })} disabled={updateStatus.isPending || !recipientName.trim()}>
                   <CheckCircle className="h-5 w-5 mr-2" /> Confirm Delivery
                 </Button>
