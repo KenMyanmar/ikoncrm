@@ -466,7 +466,7 @@ export default function MyDeliveries() {
                   status: "delivered",
                   orderId: completionDialog.order_id,
                   orderNumber: completionDialog.orders?.order_number,
-                  extras: { recipient_name: recipientName, driver_notes: driverNotes, codCollected },
+                  extras: { recipient_name: recipientName, driver_notes: driverNotes, codCollected, proof_image_url: proofImageUrl },
                 })} disabled={updateStatus.isPending || !recipientName.trim()}>
                   <CheckCircle className="h-5 w-5 mr-2" /> Confirm Delivery
                 </Button>
