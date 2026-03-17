@@ -30,7 +30,7 @@ interface DeliveryTrackingCardProps {
   order?: { payment_method?: string | null; payment_status?: string; total?: number | null; currency?: string };
 }
 
-export function DeliveryTrackingCard({ orderId }: DeliveryTrackingCardProps) {
+export function DeliveryTrackingCard({ orderId, order }: DeliveryTrackingCardProps) {
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
 
   const { data: assignment } = useQuery({
