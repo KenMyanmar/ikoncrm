@@ -287,7 +287,7 @@ export default function OrderDetail() {
 
           {/* Delivery Tracking */}
           {["out_for_delivery", "delivered"].includes(order.status) && (
-            <DeliveryTrackingCard orderId={id!} />
+            <DeliveryTrackingCard orderId={id!} order={order} />
           )}
 
           {/* SLA Performance */}

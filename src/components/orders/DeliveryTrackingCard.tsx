@@ -27,9 +27,10 @@ const STATUS_COLORS: Record<string, string> = {
 
 interface DeliveryTrackingCardProps {
   orderId: string;
+  order?: { payment_method?: string | null; payment_status?: string; total?: number | null; currency?: string };
 }
 
-export function DeliveryTrackingCard({ orderId }: DeliveryTrackingCardProps) {
+export function DeliveryTrackingCard({ orderId, order }: DeliveryTrackingCardProps) {
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
 
   const { data: assignment } = useQuery({
@@ -101,13 +102,31 @@ export function DeliveryTrackingCard({ orderId }: DeliveryTrackingCardProps) {
             </p>
           )}
 
-          {/* Proof thumbnail */}
+          {/* COD Collected */}
+          {order?.payment_method === 'cod' && assignment.codCollected && (
+            <div className="flex items-center gap-2 p-2 bg-success/10 rounded-md">
+              <span className="text-success text-sm font-medium">✅ Cash Collected: {order.total?.toLocaleString()} {order.currency}</span>
+            </div>
+          )}
+
+          {/* Driver Notes */}
+          {assignment.driver_notes && (
+            <div>
+              <p className="text-xs text-muted-foreground">Driver Notes:</p>
+              <p className="text-sm text-foreground">{assignment.driver_notes}</p>
+            </div>
+          )}
+
+          {/* Delivery Proof */}
           {proofUrl && (
-            <div
-              className="cursor-pointer rounded-md border overflow-hidden w-20 h-20"
-              onClick={() => setLightboxUrl(proofUrl)}
-            >
-              <img src={proofUrl} alt="Delivery proof" className="w-full h-full object-cover" />
+            <div>
+              <p className="text-xs font-medium text-muted-foreground mb-1.5">📸 Delivery Proof</p>
+              <div
+                className="cursor-pointer rounded-lg border border-border overflow-hidden w-full max-w-xs hover:shadow-md transition-shadow"
+                onClick={() => setLightboxUrl(proofUrl)}
+              >
+                <img src={proofUrl} alt="Delivery proof" className="w-full object-cover" />
+              </div>
             </div>
           )}
 
