@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useStaff } from "@/contexts/StaffContext";
@@ -14,7 +14,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { ImageUpload } from "@/components/ui/ImageUpload";
-import { Plus, Search, Pencil, Trash2, Tag, TrendingUp, Clock, Archive } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, Tag, TrendingUp, Clock, Archive, X } from "lucide-react";
 import { format } from "date-fns";
 
 interface Promotion {
@@ -43,8 +43,10 @@ const emptyForm = {
   title: "", description: "", type: "percentage", discount_value: 0,
   buy_quantity: 2, get_quantity: 1, min_order_amount: 0, max_discount_amount: 0,
   applies_to: "all", start_date: "", end_date: "", is_active: true,
-  priority: 0, usage_limit: 0, banner_image_url: "",
+  priority: 0, usage_limit: 0, banner_image_url: "", target_ids: [] as string[],
 };
+
+interface TargetDisplay { id: string; label: string }
 
 function getStatus(start: string, end: string) {
   const now = new Date();
@@ -71,6 +73,139 @@ function TypeBadge({ type }: { type: string }) {
   return <Badge className={t.cls}>{t.label}</Badge>;
 }
 
+// Target selector sub-component
+function TargetSelector({
+  appliesTo,
+  targetIds,
+  selectedTargets,
+  onAdd,
+  onRemove,
+  onSetSelectedTargets,
+}: {
+  appliesTo: string;
+  targetIds: string[];
+  selectedTargets: TargetDisplay[];
+  onAdd: (id: string, label: string) => void;
+  onRemove: (id: string) => void;
+  onSetSelectedTargets: (t: TargetDisplay[]) => void;
+}) {
+  const [targetSearch, setTargetSearch] = useState("");
+  const [showDropdown, setShowDropdown] = useState(false);
+
+  const debouncedSearch = useDebounce(targetSearch, 300);
+
+  const { data: searchResults = [] } = useQuery({
+    queryKey: ["target-search", appliesTo, debouncedSearch],
+    queryFn: async () => {
+      if (appliesTo === "all") return [];
+      if (appliesTo === "product") {
+        const q = supabase.from("products").select("id, stock_code, description, selling_price")
+          .eq("is_active", true).limit(20);
+        if (debouncedSearch) {
+          q.or(`description.ilike.%${debouncedSearch}%,stock_code.ilike.%${debouncedSearch}%`);
+        }
+        const { data } = await q;
+        return (data || []).map(p => ({
+          id: p.id,
+          label: `${p.stock_code} — ${p.description}${p.selling_price ? ` (${p.selling_price} MMK)` : ""}`,
+        }));
+      }
+      if (appliesTo === "category") {
+        const q = supabase.from("categories").select("id, name").order("name").limit(50);
+        if (debouncedSearch) q.ilike("name", `%${debouncedSearch}%`);
+        const { data } = await q;
+        return (data || []).map(c => ({ id: c.id, label: c.name }));
+      }
+      if (appliesTo === "brand") {
+        const q = supabase.from("brands").select("id, name").order("name").limit(50);
+        if (debouncedSearch) q.ilike("name", `%${debouncedSearch}%`);
+        const { data } = await q;
+        return (data || []).map(b => ({ id: b.id, label: b.name }));
+      }
+      return [];
+    },
+    enabled: appliesTo !== "all",
+  });
+
+  const filtered = searchResults.filter(r => !targetIds.includes(r.id));
+  const placeholder = appliesTo === "product" ? "Search products by name or code..." :
+    appliesTo === "category" ? "Search categories..." : "Search brands...";
+  const label = appliesTo === "product" ? "Select Products" :
+    appliesTo === "category" ? "Select Categories" : "Select Brands";
+
+  if (appliesTo === "all") return null;
+
+  return (
+    <div className="space-y-2">
+      <Label>{label}</Label>
+      {/* Selected chips */}
+      {selectedTargets.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {selectedTargets.map(t => (
+            <Badge key={t.id} variant="secondary" className="gap-1 pr-1 max-w-[280px]">
+              <span className="truncate">{t.label}</span>
+              <button onClick={() => onRemove(t.id)} className="ml-0.5 rounded-full hover:bg-muted-foreground/20 p-0.5">
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          ))}
+        </div>
+      )}
+      {/* Search input */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder={placeholder}
+          className="pl-9"
+          value={targetSearch}
+          onChange={e => { setTargetSearch(e.target.value); setShowDropdown(true); }}
+          onFocus={() => setShowDropdown(true)}
+          onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
+        />
+        {showDropdown && filtered.length > 0 && (
+          <div className="absolute z-50 mt-1 w-full max-h-48 overflow-y-auto rounded-md border bg-popover shadow-md">
+            {filtered.map(r => (
+              <button
+                key={r.id}
+                className="w-full text-left px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground truncate"
+                onMouseDown={e => { e.preventDefault(); onAdd(r.id, r.label); setTargetSearch(""); }}
+              >
+                {r.label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function useDebounce(value: string, delay: number) {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(t);
+  }, [value, delay]);
+  return debounced;
+}
+
+async function fetchTargetLabels(appliesTo: string, ids: string[]): Promise<TargetDisplay[]> {
+  if (!ids.length || appliesTo === "all") return [];
+  if (appliesTo === "product") {
+    const { data } = await supabase.from("products").select("id, stock_code, description").in("id", ids);
+    return (data || []).map(p => ({ id: p.id, label: `${p.stock_code} — ${p.description}` }));
+  }
+  if (appliesTo === "category") {
+    const { data } = await supabase.from("categories").select("id, name").in("id", ids);
+    return (data || []).map(c => ({ id: c.id, label: c.name }));
+  }
+  if (appliesTo === "brand") {
+    const { data } = await supabase.from("brands").select("id, name").in("id", ids);
+    return (data || []).map(b => ({ id: b.id, label: b.name }));
+  }
+  return [];
+}
+
 export default function Promotions() {
   const { staff } = useStaff();
   const { toast } = useToast();
@@ -82,6 +217,7 @@ export default function Promotions() {
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [selectedTargets, setSelectedTargets] = useState<TargetDisplay[]>([]);
 
   const { data: promotions = [], isLoading } = useQuery({
     queryKey: ["promotions"],
@@ -102,6 +238,7 @@ export default function Promotions() {
         min_order_amount: form.min_order_amount || 0,
         max_discount_amount: form.max_discount_amount || null,
         applies_to: form.applies_to,
+        target_ids: form.applies_to === "all" ? [] : form.target_ids,
         start_date: form.start_date, end_date: form.end_date,
         is_active: form.is_active, priority: form.priority,
         usage_limit: form.usage_limit || null,
@@ -156,9 +293,10 @@ export default function Promotions() {
     return { total, active, upcoming, expired };
   }, [promotions]);
 
-  const openCreate = () => { setEditId(null); setForm(emptyForm); setDialogOpen(true); };
-  const openEdit = (p: Promotion) => {
+  const openCreate = () => { setEditId(null); setForm(emptyForm); setSelectedTargets([]); setDialogOpen(true); };
+  const openEdit = async (p: Promotion) => {
     setEditId(p.id);
+    const tIds = p.target_ids || [];
     setForm({
       title: p.title, description: p.description || "", type: p.type,
       discount_value: p.discount_value || 0, buy_quantity: p.buy_quantity || 2,
@@ -168,8 +306,27 @@ export default function Promotions() {
       end_date: p.end_date ? p.end_date.slice(0, 16) : "",
       is_active: p.is_active, priority: p.priority,
       usage_limit: p.usage_limit || 0, banner_image_url: p.banner_image_url || "",
+      target_ids: tIds,
     });
     setDialogOpen(true);
+    // Fetch labels for existing target_ids
+    const labels = await fetchTargetLabels(p.applies_to, tIds);
+    setSelectedTargets(labels);
+  };
+
+  const handleAppliesToChange = (v: string) => {
+    setForm(f => ({ ...f, applies_to: v, target_ids: [] }));
+    setSelectedTargets([]);
+  };
+
+  const handleAddTarget = (id: string, label: string) => {
+    setForm(f => ({ ...f, target_ids: [...f.target_ids, id] }));
+    setSelectedTargets(prev => [...prev, { id, label }]);
+  };
+
+  const handleRemoveTarget = (id: string) => {
+    setForm(f => ({ ...f, target_ids: f.target_ids.filter(t => t !== id) }));
+    setSelectedTargets(prev => prev.filter(t => t.id !== id));
   };
 
   const discountDisplay = (p: Promotion) => {
@@ -262,7 +419,12 @@ export default function Promotions() {
                   <TableCell className="font-medium">{p.title}</TableCell>
                   <TableCell><TypeBadge type={p.type} /></TableCell>
                   <TableCell className="font-semibold">{discountDisplay(p)}</TableCell>
-                  <TableCell><Badge variant="outline" className="capitalize">{p.applies_to}</Badge></TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="capitalize">{p.applies_to}</Badge>
+                    {p.target_ids?.length > 0 && (
+                      <span className="ml-1 text-xs text-muted-foreground">({p.target_ids.length})</span>
+                    )}
+                  </TableCell>
                   <TableCell className="text-xs text-muted-foreground">
                     {format(new Date(p.start_date), "MMM d")} — {format(new Date(p.end_date), "MMM d, yyyy")}
                   </TableCell>
@@ -314,7 +476,7 @@ export default function Promotions() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div><Label>Applies To</Label>
-                <Select value={form.applies_to} onValueChange={v => setForm(f => ({ ...f, applies_to: v }))}>
+                <Select value={form.applies_to} onValueChange={handleAppliesToChange}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Products</SelectItem>
@@ -326,6 +488,19 @@ export default function Promotions() {
               </div>
               <div><Label>Priority</Label><Input type="number" value={form.priority} onChange={e => setForm(f => ({ ...f, priority: +e.target.value }))} /></div>
             </div>
+
+            {/* Target Selector */}
+            {form.applies_to !== "all" && (
+              <TargetSelector
+                appliesTo={form.applies_to}
+                targetIds={form.target_ids}
+                selectedTargets={selectedTargets}
+                onAdd={handleAddTarget}
+                onRemove={handleRemoveTarget}
+                onSetSelectedTargets={setSelectedTargets}
+              />
+            )}
+
             <div className="grid grid-cols-2 gap-4">
               <div><Label>Min Order Amount</Label><Input type="number" value={form.min_order_amount} onChange={e => setForm(f => ({ ...f, min_order_amount: +e.target.value }))} /></div>
               <div><Label>Max Discount</Label><Input type="number" value={form.max_discount_amount} onChange={e => setForm(f => ({ ...f, max_discount_amount: +e.target.value }))} /></div>
