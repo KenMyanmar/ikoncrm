@@ -13,28 +13,71 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { Save, ArrowRight, ArrowLeft, Plus, Trash2, X, Star } from "lucide-react";
 import { ImageUpload } from "@/components/ui/ImageUpload";
 import { FileUpload } from "@/components/ui/FileUpload";
 
+const generateSlug = (text: string) =>
+  text.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") + "-" + Date.now();
+
+const emptyForm = {
+  stock_code: "",
+  slug: "",
+  other_code: "",
+  description: "",
+  short_description: "",
+  long_description: "",
+  features: "",
+  brand_id: null,
+  category_id: null,
+  group_id: null,
+  unit_of_measure: "",
+  packing: "",
+  item_type: "",
+  main_vendor: "",
+  moq: 1,
+  selling_price: null,
+  currency: "MMK",
+  unit_cost: 0,
+  stock_status: "in_stock",
+  onhand_qty: 0,
+  min_qty: 0,
+  max_qty: 0,
+  reorder_qty: 0,
+  thumbnail_url: "",
+  images: [],
+  is_active: true,
+  is_featured: false,
+  tags: [],
+  specifications: {},
+  datasheet_url: "",
+  data_completeness: 0,
+};
+
 export default function ProductEdit() {
   const { id } = useParams<{ id: string }>();
+  const isNew = id === "new";
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { staff } = useStaff();
-  const [form, setForm] = useState<any>(null);
+  const [form, setForm] = useState<any>(isNew ? { ...emptyForm } : null);
   const [specs, setSpecs] = useState<{ key: string; value: string }[]>([]);
   const [tagInput, setTagInput] = useState("");
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
-  // Fetch product
+  // Fetch product (skip for new)
   const { data: product, isLoading } = useQuery({
     queryKey: ["admin-product", id],
     queryFn: async () => {
       const { data } = await supabase.from("products").select("*").eq("id", id!).single();
       return data;
     },
-    enabled: !!id,
+    enabled: !!id && !isNew,
   });
 
   // Fetch dropdown data
@@ -68,7 +111,7 @@ export default function ProductEdit() {
 
   // Initialize form & specs from product
   useEffect(() => {
-    if (product) {
+    if (product && !isNew) {
       setForm({ ...product });
       if (product.specifications && typeof product.specifications === "object" && !Array.isArray(product.specifications)) {
         const entries = Object.entries(product.specifications as Record<string, string>);
@@ -77,64 +120,91 @@ export default function ProductEdit() {
         setSpecs([]);
       }
     }
-  }, [product]);
+  }, [product, isNew]);
 
   // Save mutation
   const saveMutation = useMutation({
     mutationFn: async (andNext: boolean) => {
-      if (!form || !id || !staff) return;
+      if (!form || !staff) return;
 
       const specsObj = Object.fromEntries(
         specs.filter((s) => s.key.trim()).map((s) => [s.key.trim(), s.value.trim()])
       );
 
+      const payload = {
+        description: form.description,
+        short_description: form.short_description,
+        long_description: form.long_description,
+        other_code: form.other_code,
+        brand_id: form.brand_id || null,
+        category_id: form.category_id || null,
+        group_id: form.group_id || null,
+        unit_of_measure: form.unit_of_measure,
+        packing: form.packing,
+        item_type: form.item_type,
+        main_vendor: form.main_vendor,
+        moq: form.moq ? Number(form.moq) : 1,
+        selling_price: form.selling_price ? Number(form.selling_price) : null,
+        currency: form.currency || "MMK",
+        unit_cost: form.unit_cost ? Number(form.unit_cost) : 0,
+        stock_status: form.stock_status,
+        onhand_qty: form.onhand_qty ? Number(form.onhand_qty) : 0,
+        min_qty: form.min_qty ? Number(form.min_qty) : 0,
+        max_qty: form.max_qty ? Number(form.max_qty) : 0,
+        reorder_qty: form.reorder_qty ? Number(form.reorder_qty) : 0,
+        specifications: specsObj,
+        datasheet_url: form.datasheet_url,
+        features: form.features || null,
+        thumbnail_url: form.thumbnail_url,
+        images: Array.isArray(form.images) ? form.images : [],
+        is_featured: form.is_featured,
+        is_active: form.is_active,
+        tags: form.tags || [],
+        last_enriched_at: new Date().toISOString(),
+        enriched_by: staff.id,
+      };
+
+      if (isNew) {
+        if (!form.stock_code?.trim()) throw new Error("Stock Code is required");
+        if (!form.description?.trim()) throw new Error("Description is required");
+
+        const slug = form.slug?.trim() || generateSlug(form.description);
+
+        const { data: inserted, error } = await supabase
+          .from("products")
+          .insert({
+            ...payload,
+            stock_code: form.stock_code.trim(),
+            slug,
+          } as any)
+          .select("id")
+          .single();
+
+        if (error) throw error;
+        const newId = inserted.id;
+        await supabase.rpc("calculate_data_completeness", { _product_id: newId });
+        await logActivity(staff.id, "created", "product", newId, form.stock_code);
+        navigate(`/products/${newId}`, { replace: true });
+        return;
+      }
+
+      // Edit mode
       const { error } = await supabase
         .from("products")
-        .update({
-          description: form.description,
-          short_description: form.short_description,
-          long_description: form.long_description,
-          other_code: form.other_code,
-          brand_id: form.brand_id || null,
-          category_id: form.category_id || null,
-          group_id: form.group_id || null,
-          unit_of_measure: form.unit_of_measure,
-          packing: form.packing,
-          item_type: form.item_type,
-          main_vendor: form.main_vendor,
-          moq: form.moq ? Number(form.moq) : 1,
-          selling_price: form.selling_price ? Number(form.selling_price) : null,
-          currency: form.currency || "MMK",
-          unit_cost: form.unit_cost ? Number(form.unit_cost) : 0,
-          stock_status: form.stock_status,
-          onhand_qty: form.onhand_qty ? Number(form.onhand_qty) : 0,
-          min_qty: form.min_qty ? Number(form.min_qty) : 0,
-          max_qty: form.max_qty ? Number(form.max_qty) : 0,
-          reorder_qty: form.reorder_qty ? Number(form.reorder_qty) : 0,
-          specifications: specsObj,
-          datasheet_url: form.datasheet_url,
-          features: form.features || null,
-          thumbnail_url: form.thumbnail_url,
-          images: Array.isArray(form.images) ? form.images : [],
-          is_featured: form.is_featured,
-          is_active: form.is_active,
-          tags: form.tags || [],
-          last_enriched_at: new Date().toISOString(),
-          enriched_by: staff.id,
-        } as any)
-        .eq("id", id);
+        .update(payload as any)
+        .eq("id", id!);
 
       if (error) throw error;
 
-      await supabase.rpc("calculate_data_completeness", { _product_id: id });
-      await logActivity(staff.id, "updated", "product", id, form.stock_code);
+      await supabase.rpc("calculate_data_completeness", { _product_id: id! });
+      await logActivity(staff.id, "updated", "product", id!, form.stock_code);
 
       if (andNext) {
         const { data: next } = await supabase
           .from("products")
           .select("id")
           .lt("data_completeness", 50)
-          .neq("id", id)
+          .neq("id", id!)
           .order("data_completeness", { ascending: true })
           .limit(1)
           .single();
@@ -143,14 +213,32 @@ export default function ProductEdit() {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-product", id] });
+      if (!isNew) {
+        queryClient.invalidateQueries({ queryKey: ["admin-product", id] });
+      }
       queryClient.invalidateQueries({ queryKey: ["admin-products"] });
-      toast.success("Product saved");
+      toast.success(isNew ? "Product created" : "Product saved");
     },
     onError: (e: any) => toast.error(e.message),
   });
 
-  if (isLoading || !form) {
+  // Deactivate mutation
+  const deactivateMutation = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from("products")
+        .update({ is_active: false, updated_at: new Date().toISOString() })
+        .eq("id", id!);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Product deactivated");
+      navigate("/products");
+    },
+    onError: (e: any) => toast.error("Failed to deactivate: " + e.message),
+  });
+
+  if (!isNew && (isLoading || !form)) {
     return (
       <div className="flex items-center justify-center py-20">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
@@ -196,21 +284,25 @@ export default function ProductEdit() {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
-            <h1 className="text-xl font-bold text-foreground">{form.stock_code}</h1>
-            <p className="text-sm text-muted-foreground truncate max-w-md">{form.description}</p>
+            <h1 className="text-xl font-bold text-foreground">{isNew ? "New Product" : form.stock_code}</h1>
+            <p className="text-sm text-muted-foreground truncate max-w-md">{isNew ? "Create a new product" : form.description}</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <Progress value={form.data_completeness} className="h-2 w-20" />
-            <span className="text-xs text-muted-foreground">{form.data_completeness}%</span>
-          </div>
+          {!isNew && (
+            <div className="flex items-center gap-2">
+              <Progress value={form.data_completeness} className="h-2 w-20" />
+              <span className="text-xs text-muted-foreground">{form.data_completeness}%</span>
+            </div>
+          )}
           <Button variant="outline" size="sm" onClick={() => saveMutation.mutate(false)} disabled={saveMutation.isPending}>
-            <Save className="h-4 w-4 mr-1" /> Save
+            <Save className="h-4 w-4 mr-1" /> {isNew ? "Create" : "Save"}
           </Button>
-          <Button size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90" onClick={() => saveMutation.mutate(true)} disabled={saveMutation.isPending}>
-            Save & Next <ArrowRight className="h-4 w-4 ml-1" />
-          </Button>
+          {!isNew && (
+            <Button size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90" onClick={() => saveMutation.mutate(true)} disabled={saveMutation.isPending}>
+              Save & Next <ArrowRight className="h-4 w-4 ml-1" />
+            </Button>
+          )}
         </div>
       </div>
 
@@ -329,6 +421,24 @@ export default function ProductEdit() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Delete button (edit mode only) */}
+          {!isNew && (
+            <Card className="border-destructive/30">
+              <CardContent className="pt-4">
+                <Button
+                  variant="outline"
+                  className="w-full text-destructive border-destructive/30 hover:bg-destructive/10"
+                  onClick={() => setShowDeleteDialog(true)}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" /> Deactivate Product
+                </Button>
+                <p className="text-xs text-muted-foreground mt-2 text-center">
+                  Hides this product from the E-Mall. Can be reactivated later.
+                </p>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* Right Column */}
@@ -339,12 +449,24 @@ export default function ProductEdit() {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <Label className="text-xs">Stock Code</Label>
-                  <Input value={form.stock_code} disabled className="bg-muted" />
+                  <Label className="text-xs">Stock Code {isNew && <span className="text-destructive">*</span>}</Label>
+                  {isNew ? (
+                    <Input value={form.stock_code} onChange={(e) => update("stock_code", e.target.value)} placeholder="e.g. SKU-001" />
+                  ) : (
+                    <Input value={form.stock_code} disabled className="bg-muted" />
+                  )}
                 </div>
                 <div>
                   <Label className="text-xs">Slug</Label>
-                  <Input value={form.slug} disabled className="bg-muted" />
+                  {isNew ? (
+                    <Input
+                      value={form.slug}
+                      onChange={(e) => update("slug", e.target.value)}
+                      placeholder="Auto-generated from description"
+                    />
+                  ) : (
+                    <Input value={form.slug} disabled className="bg-muted" />
+                  )}
                 </div>
                 <div>
                   <Label className="text-xs">Alt Code</Label>
@@ -352,8 +474,17 @@ export default function ProductEdit() {
                 </div>
               </div>
               <div>
-                <Label className="text-xs">Description</Label>
-                <Textarea value={form.description || ""} onChange={(e) => update("description", e.target.value)} rows={2} />
+                <Label className="text-xs">Description {isNew && <span className="text-destructive">*</span>}</Label>
+                <Textarea
+                  value={form.description || ""}
+                  onChange={(e) => update("description", e.target.value)}
+                  onBlur={() => {
+                    if (isNew && !form.slug && form.description) {
+                      update("slug", generateSlug(form.description));
+                    }
+                  }}
+                  rows={2}
+                />
               </div>
               <div>
                 <Label className="text-xs">Short Description</Label>
@@ -587,6 +718,27 @@ export default function ProductEdit() {
           </Card>
         </div>
       </div>
+
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Deactivate Product</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to deactivate <strong>{form.stock_code}</strong>? It will be hidden from the E-Mall but can be reactivated later.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => deactivateMutation.mutate()}
+            >
+              Deactivate
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

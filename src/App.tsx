@@ -54,6 +54,7 @@ const App = () => (
               <Route path="/" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
                 <Route index element={<Dashboard />} />
                 <Route path="products" element={<ProtectedRoute module="products"><ProductList /></ProtectedRoute>} />
+                <Route path="products/new" element={<ProtectedRoute module="products"><ProductEdit /></ProtectedRoute>} />
                 <Route path="products/:id" element={<ProtectedRoute module="products"><ProductEdit /></ProtectedRoute>} />
                 <Route path="products/bulk-price" element={<ProtectedRoute module="products"><BulkPriceUpload /></ProtectedRoute>} />
                 <Route path="categories" element={<ProtectedRoute module="categories"><CategoryList /></ProtectedRoute>} />
