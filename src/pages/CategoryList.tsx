@@ -16,6 +16,9 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Plus, Edit, ChevronRight, ChevronDown, Trash2, FolderOpen } from "lucide-react";
 
+const generateSlug = (name: string) =>
+  name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+
 interface Category {
   id: string;
   name: string;
