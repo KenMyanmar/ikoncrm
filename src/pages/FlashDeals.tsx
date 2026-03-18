@@ -40,6 +40,14 @@ interface Product {
   thumbnail_url: string | null;
 }
 
+const toMMT = (v: string) => v ? v + ':00+06:30' : v;
+const fromMMT = (iso: string) => {
+  if (!iso) return '';
+  const d = new Date(iso);
+  const mmt = new Date(d.getTime() + (6 * 60 + 30) * 60 * 1000);
+  return mmt.toISOString().slice(0, 16);
+};
+
 const emptyForm = {
   product_id: "", title: "", original_price: 0, flash_price: 0,
   stock_limit: 100, start_time: "", end_time: "", is_active: true,
@@ -106,8 +114,8 @@ export default function FlashDeals() {
       const payload: any = {
         product_id: form.product_id, title: form.title || null,
         original_price: form.original_price, flash_price: form.flash_price,
-        stock_limit: form.stock_limit, start_time: form.start_time,
-        end_time: form.end_time, is_active: form.is_active,
+        stock_limit: form.stock_limit, start_time: toMMT(form.start_time),
+        end_time: toMMT(form.end_time), is_active: form.is_active,
         badge_text: form.badge_text, sort_order: form.sort_order,
       };
       if (editId) {
@@ -152,8 +160,8 @@ export default function FlashDeals() {
     setForm({
       product_id: d.product_id, title: d.title || "", original_price: d.original_price,
       flash_price: d.flash_price, stock_limit: d.stock_limit,
-      start_time: d.start_time ? d.start_time.slice(0, 16) : "",
-      end_time: d.end_time ? d.end_time.slice(0, 16) : "",
+      start_time: fromMMT(d.start_time),
+      end_time: fromMMT(d.end_time),
       is_active: d.is_active, badge_text: d.badge_text, sort_order: d.sort_order,
     });
     setDialogOpen(true);
@@ -348,8 +356,8 @@ export default function FlashDeals() {
             )}
             <div><Label>Stock Limit</Label><Input type="number" value={form.stock_limit} onChange={e => setForm(f => ({ ...f, stock_limit: +e.target.value }))} /></div>
             <div className="grid grid-cols-2 gap-4">
-              <div><Label>Start Time</Label><Input type="datetime-local" value={form.start_time} onChange={e => setForm(f => ({ ...f, start_time: e.target.value }))} /></div>
-              <div><Label>End Time</Label><Input type="datetime-local" value={form.end_time} onChange={e => setForm(f => ({ ...f, end_time: e.target.value }))} /></div>
+              <div><Label>Start Time <span className="text-xs text-muted-foreground">(MMT)</span></Label><Input type="datetime-local" value={form.start_time} onChange={e => setForm(f => ({ ...f, start_time: e.target.value }))} /></div>
+              <div><Label>End Time <span className="text-xs text-muted-foreground">(MMT)</span></Label><Input type="datetime-local" value={form.end_time} onChange={e => setForm(f => ({ ...f, end_time: e.target.value }))} /></div>
             </div>
             <div><Label>Badge Text</Label><Input value={form.badge_text} onChange={e => setForm(f => ({ ...f, badge_text: e.target.value }))} /></div>
             <div className="flex items-center gap-2"><Switch checked={form.is_active} onCheckedChange={v => setForm(f => ({ ...f, is_active: v }))} /><Label>Active</Label></div>

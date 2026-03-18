@@ -39,6 +39,14 @@ interface Promotion {
   created_at: string;
 }
 
+const toMMT = (v: string) => v ? v + ':00+06:30' : v;
+const fromMMT = (iso: string) => {
+  if (!iso) return '';
+  const d = new Date(iso);
+  const mmt = new Date(d.getTime() + (6 * 60 + 30) * 60 * 1000);
+  return mmt.toISOString().slice(0, 16);
+};
+
 const emptyForm = {
   title: "", description: "", type: "percentage", discount_value: 0,
   buy_quantity: 2, get_quantity: 1, min_order_amount: 0, max_discount_amount: 0,
@@ -239,7 +247,7 @@ export default function Promotions() {
         max_discount_amount: form.max_discount_amount || null,
         applies_to: form.applies_to,
         target_ids: form.applies_to === "all" ? [] : form.target_ids,
-        start_date: form.start_date, end_date: form.end_date,
+        start_date: toMMT(form.start_date), end_date: toMMT(form.end_date),
         is_active: form.is_active, priority: form.priority,
         usage_limit: form.usage_limit || null,
         banner_image_url: form.banner_image_url || null,
@@ -302,8 +310,8 @@ export default function Promotions() {
       discount_value: p.discount_value || 0, buy_quantity: p.buy_quantity || 2,
       get_quantity: p.get_quantity || 1, min_order_amount: p.min_order_amount || 0,
       max_discount_amount: p.max_discount_amount || 0, applies_to: p.applies_to,
-      start_date: p.start_date ? p.start_date.slice(0, 16) : "",
-      end_date: p.end_date ? p.end_date.slice(0, 16) : "",
+      start_date: fromMMT(p.start_date),
+      end_date: fromMMT(p.end_date),
       is_active: p.is_active, priority: p.priority,
       usage_limit: p.usage_limit || 0, banner_image_url: p.banner_image_url || "",
       target_ids: tIds,
@@ -506,8 +514,8 @@ export default function Promotions() {
               <div><Label>Max Discount</Label><Input type="number" value={form.max_discount_amount} onChange={e => setForm(f => ({ ...f, max_discount_amount: +e.target.value }))} /></div>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <div><Label>Start Date</Label><Input type="datetime-local" value={form.start_date} onChange={e => setForm(f => ({ ...f, start_date: e.target.value }))} /></div>
-              <div><Label>End Date</Label><Input type="datetime-local" value={form.end_date} onChange={e => setForm(f => ({ ...f, end_date: e.target.value }))} /></div>
+              <div><Label>Start Date <span className="text-xs text-muted-foreground">(MMT)</span></Label><Input type="datetime-local" value={form.start_date} onChange={e => setForm(f => ({ ...f, start_date: e.target.value }))} /></div>
+              <div><Label>End Date <span className="text-xs text-muted-foreground">(MMT)</span></Label><Input type="datetime-local" value={form.end_date} onChange={e => setForm(f => ({ ...f, end_date: e.target.value }))} /></div>
             </div>
             <div><Label>Usage Limit (0 = unlimited)</Label><Input type="number" value={form.usage_limit} onChange={e => setForm(f => ({ ...f, usage_limit: +e.target.value }))} /></div>
             <div><Label>Banner Image</Label><ImageUpload bucket="banners" folder="promotions" value={form.banner_image_url || ""} onChange={url => setForm(f => ({ ...f, banner_image_url: url }))} aspectHint="1200×400px" /></div>
