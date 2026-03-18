@@ -247,7 +247,7 @@ export default function Promotions() {
         max_discount_amount: form.max_discount_amount || null,
         applies_to: form.applies_to,
         target_ids: form.applies_to === "all" ? [] : form.target_ids,
-        start_date: form.start_date, end_date: form.end_date,
+        start_date: toMMT(form.start_date), end_date: toMMT(form.end_date),
         is_active: form.is_active, priority: form.priority,
         usage_limit: form.usage_limit || null,
         banner_image_url: form.banner_image_url || null,
