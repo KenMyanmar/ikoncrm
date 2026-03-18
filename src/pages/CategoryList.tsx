@@ -112,15 +112,17 @@ export default function CategoryList() {
 
   const saveMutation = useMutation({
     mutationFn: async (cat: any) => {
+      const resolvedParentId = cat.parent_id === "none" ? null : (cat.parent_id || null);
+      const slug = cat.slug?.trim() || generateSlug(cat.name);
       const payload = {
         name: cat.name,
-        slug: cat.slug,
+        slug,
         description: cat.description,
         is_active: cat.is_active,
         sort_order: cat.sort_order || 0,
-        group_id: cat.group_id || null,
-        parent_id: cat.parent_id || null,
-        depth: cat.parent_id ? 1 : 0,
+        group_id: cat.group_id === "none" ? null : (cat.group_id || null),
+        parent_id: resolvedParentId,
+        depth: resolvedParentId ? 1 : 0,
         image_url: cat.image_url || null,
       };
       if (cat.id) {
