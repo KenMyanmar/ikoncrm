@@ -16,6 +16,9 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Plus, Edit, ChevronRight, ChevronDown, Trash2, FolderOpen } from "lucide-react";
 
+const generateSlug = (name: string) =>
+  name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+
 interface Category {
   id: string;
   name: string;
@@ -109,15 +112,17 @@ export default function CategoryList() {
 
   const saveMutation = useMutation({
     mutationFn: async (cat: any) => {
+      const resolvedParentId = cat.parent_id === "none" ? null : (cat.parent_id || null);
+      const slug = cat.slug?.trim() || generateSlug(cat.name);
       const payload = {
         name: cat.name,
-        slug: cat.slug,
+        slug,
         description: cat.description,
         is_active: cat.is_active,
         sort_order: cat.sort_order || 0,
-        group_id: cat.group_id || null,
-        parent_id: cat.parent_id || null,
-        depth: cat.parent_id ? 1 : 0,
+        group_id: cat.group_id === "none" ? null : (cat.group_id || null),
+        parent_id: resolvedParentId,
+        depth: resolvedParentId ? 1 : 0,
         image_url: cat.image_url || null,
       };
       if (cat.id) {
@@ -157,7 +162,11 @@ export default function CategoryList() {
   });
 
   const openEdit = (cat?: any) => {
-    setEditing(cat || { name: "", slug: "", description: "", is_active: true, sort_order: 0, group_id: null, parent_id: null, image_url: null });
+    if (cat) {
+      setEditing({ ...cat, parent_id: cat.parent_id || "none", group_id: cat.group_id || "none" });
+    } else {
+      setEditing({ name: "", slug: "", description: "", is_active: true, sort_order: 0, group_id: "none", parent_id: "none", image_url: null });
+    }
     setOpen(true);
   };
 
@@ -278,17 +287,32 @@ export default function CategoryList() {
             <div className="space-y-4">
               <div>
                 <Label>Name</Label>
-                <Input value={editing.name} onChange={e => setEditing({ ...editing, name: e.target.value })} />
+                <Input
+                  value={editing.name}
+                  onChange={e => {
+                    const newName = e.target.value;
+                    const updates: any = { name: newName };
+                    if (!editing.id && (!editing.slug || editing.slug === generateSlug(editing.name))) {
+                      updates.slug = generateSlug(newName);
+                    }
+                    setEditing({ ...editing, ...updates });
+                  }}
+                />
               </div>
               <div>
                 <Label>Slug</Label>
-                <Input value={editing.slug} onChange={e => setEditing({ ...editing, slug: e.target.value })} />
+                <Input
+                  value={editing.slug}
+                  onChange={e => setEditing({ ...editing, slug: e.target.value })}
+                  placeholder="Auto-generated from name"
+                />
               </div>
               <div>
                 <Label>Group</Label>
-                <Select value={editing.group_id || ""} onValueChange={v => setEditing({ ...editing, group_id: v || null })}>
+                <Select value={editing.group_id || "none"} onValueChange={v => setEditing({ ...editing, group_id: v })}>
                   <SelectTrigger><SelectValue placeholder="Select group" /></SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
                     {(groups || []).map(g => (
                       <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>
                     ))}
@@ -298,13 +322,13 @@ export default function CategoryList() {
               <div>
                 <Label>Parent Category {hasChildren && <span className="text-xs text-muted-foreground">(has children — cannot change)</span>}</Label>
                 <Select
-                  value={editing.parent_id || ""}
-                  onValueChange={v => setEditing({ ...editing, parent_id: v || null })}
+                  value={editing.parent_id || "none"}
+                  onValueChange={v => setEditing({ ...editing, parent_id: v })}
                   disabled={hasChildren}
                 >
                   <SelectTrigger><SelectValue placeholder="None (top-level)" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None (top-level)</SelectItem>
+                    <SelectItem value="none">None (top-level)</SelectItem>
                     {parentOptions.map(c => (
                       <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                     ))}
