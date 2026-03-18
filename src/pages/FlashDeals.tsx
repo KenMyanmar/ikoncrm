@@ -40,6 +40,14 @@ interface Product {
   thumbnail_url: string | null;
 }
 
+const toMMT = (v: string) => v ? v + ':00+06:30' : v;
+const fromMMT = (iso: string) => {
+  if (!iso) return '';
+  const d = new Date(iso);
+  const mmt = new Date(d.getTime() + (6 * 60 + 30) * 60 * 1000);
+  return mmt.toISOString().slice(0, 16);
+};
+
 const emptyForm = {
   product_id: "", title: "", original_price: 0, flash_price: 0,
   stock_limit: 100, start_time: "", end_time: "", is_active: true,
