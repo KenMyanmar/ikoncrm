@@ -162,7 +162,11 @@ export default function CategoryList() {
   });
 
   const openEdit = (cat?: any) => {
-    setEditing(cat || { name: "", slug: "", description: "", is_active: true, sort_order: 0, group_id: null, parent_id: null, image_url: null });
+    if (cat) {
+      setEditing({ ...cat, parent_id: cat.parent_id || "none", group_id: cat.group_id || "none" });
+    } else {
+      setEditing({ name: "", slug: "", description: "", is_active: true, sort_order: 0, group_id: "none", parent_id: "none", image_url: null });
+    }
     setOpen(true);
   };
 
