@@ -287,17 +287,32 @@ export default function CategoryList() {
             <div className="space-y-4">
               <div>
                 <Label>Name</Label>
-                <Input value={editing.name} onChange={e => setEditing({ ...editing, name: e.target.value })} />
+                <Input
+                  value={editing.name}
+                  onChange={e => {
+                    const newName = e.target.value;
+                    const updates: any = { name: newName };
+                    if (!editing.id && (!editing.slug || editing.slug === generateSlug(editing.name))) {
+                      updates.slug = generateSlug(newName);
+                    }
+                    setEditing({ ...editing, ...updates });
+                  }}
+                />
               </div>
               <div>
                 <Label>Slug</Label>
-                <Input value={editing.slug} onChange={e => setEditing({ ...editing, slug: e.target.value })} />
+                <Input
+                  value={editing.slug}
+                  onChange={e => setEditing({ ...editing, slug: e.target.value })}
+                  placeholder="Auto-generated from name"
+                />
               </div>
               <div>
                 <Label>Group</Label>
-                <Select value={editing.group_id || ""} onValueChange={v => setEditing({ ...editing, group_id: v || null })}>
+                <Select value={editing.group_id || "none"} onValueChange={v => setEditing({ ...editing, group_id: v })}>
                   <SelectTrigger><SelectValue placeholder="Select group" /></SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
                     {(groups || []).map(g => (
                       <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>
                     ))}
@@ -307,13 +322,13 @@ export default function CategoryList() {
               <div>
                 <Label>Parent Category {hasChildren && <span className="text-xs text-muted-foreground">(has children — cannot change)</span>}</Label>
                 <Select
-                  value={editing.parent_id || ""}
-                  onValueChange={v => setEditing({ ...editing, parent_id: v || null })}
+                  value={editing.parent_id || "none"}
+                  onValueChange={v => setEditing({ ...editing, parent_id: v })}
                   disabled={hasChildren}
                 >
                   <SelectTrigger><SelectValue placeholder="None (top-level)" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None (top-level)</SelectItem>
+                    <SelectItem value="none">None (top-level)</SelectItem>
                     {parentOptions.map(c => (
                       <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                     ))}
