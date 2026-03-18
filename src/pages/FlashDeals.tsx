@@ -356,8 +356,8 @@ export default function FlashDeals() {
             )}
             <div><Label>Stock Limit</Label><Input type="number" value={form.stock_limit} onChange={e => setForm(f => ({ ...f, stock_limit: +e.target.value }))} /></div>
             <div className="grid grid-cols-2 gap-4">
-              <div><Label>Start Time</Label><Input type="datetime-local" value={form.start_time} onChange={e => setForm(f => ({ ...f, start_time: e.target.value }))} /></div>
-              <div><Label>End Time</Label><Input type="datetime-local" value={form.end_time} onChange={e => setForm(f => ({ ...f, end_time: e.target.value }))} /></div>
+              <div><Label>Start Time <span className="text-xs text-muted-foreground">(MMT)</span></Label><Input type="datetime-local" value={form.start_time} onChange={e => setForm(f => ({ ...f, start_time: e.target.value }))} /></div>
+              <div><Label>End Time <span className="text-xs text-muted-foreground">(MMT)</span></Label><Input type="datetime-local" value={form.end_time} onChange={e => setForm(f => ({ ...f, end_time: e.target.value }))} /></div>
             </div>
             <div><Label>Badge Text</Label><Input value={form.badge_text} onChange={e => setForm(f => ({ ...f, badge_text: e.target.value }))} /></div>
             <div className="flex items-center gap-2"><Switch checked={form.is_active} onCheckedChange={v => setForm(f => ({ ...f, is_active: v }))} /><Label>Active</Label></div>

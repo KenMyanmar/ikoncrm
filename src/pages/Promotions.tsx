@@ -514,8 +514,8 @@ export default function Promotions() {
               <div><Label>Max Discount</Label><Input type="number" value={form.max_discount_amount} onChange={e => setForm(f => ({ ...f, max_discount_amount: +e.target.value }))} /></div>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <div><Label>Start Date</Label><Input type="datetime-local" value={form.start_date} onChange={e => setForm(f => ({ ...f, start_date: e.target.value }))} /></div>
-              <div><Label>End Date</Label><Input type="datetime-local" value={form.end_date} onChange={e => setForm(f => ({ ...f, end_date: e.target.value }))} /></div>
+              <div><Label>Start Date <span className="text-xs text-muted-foreground">(MMT)</span></Label><Input type="datetime-local" value={form.start_date} onChange={e => setForm(f => ({ ...f, start_date: e.target.value }))} /></div>
+              <div><Label>End Date <span className="text-xs text-muted-foreground">(MMT)</span></Label><Input type="datetime-local" value={form.end_date} onChange={e => setForm(f => ({ ...f, end_date: e.target.value }))} /></div>
             </div>
             <div><Label>Usage Limit (0 = unlimited)</Label><Input type="number" value={form.usage_limit} onChange={e => setForm(f => ({ ...f, usage_limit: +e.target.value }))} /></div>
             <div><Label>Banner Image</Label><ImageUpload bucket="banners" folder="promotions" value={form.banner_image_url || ""} onChange={url => setForm(f => ({ ...f, banner_image_url: url }))} aspectHint="1200×400px" /></div>
