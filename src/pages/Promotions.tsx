@@ -39,6 +39,14 @@ interface Promotion {
   created_at: string;
 }
 
+const toMMT = (v: string) => v ? v + ':00+06:30' : v;
+const fromMMT = (iso: string) => {
+  if (!iso) return '';
+  const d = new Date(iso);
+  const mmt = new Date(d.getTime() + (6 * 60 + 30) * 60 * 1000);
+  return mmt.toISOString().slice(0, 16);
+};
+
 const emptyForm = {
   title: "", description: "", type: "percentage", discount_value: 0,
   buy_quantity: 2, get_quantity: 1, min_order_amount: 0, max_discount_amount: 0,
