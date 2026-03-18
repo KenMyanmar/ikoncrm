@@ -114,8 +114,8 @@ export default function FlashDeals() {
       const payload: any = {
         product_id: form.product_id, title: form.title || null,
         original_price: form.original_price, flash_price: form.flash_price,
-        stock_limit: form.stock_limit, start_time: form.start_time,
-        end_time: form.end_time, is_active: form.is_active,
+        stock_limit: form.stock_limit, start_time: toMMT(form.start_time),
+        end_time: toMMT(form.end_time), is_active: form.is_active,
         badge_text: form.badge_text, sort_order: form.sort_order,
       };
       if (editId) {
