@@ -45,7 +45,7 @@ export default function ProductList() {
     },
   });
 
-  const { data, isLoading, refetch } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ["admin-products", search, page, statusFilter, showInactive],
     queryFn: async () => {
       let query = supabase
