@@ -160,8 +160,8 @@ export default function FlashDeals() {
     setForm({
       product_id: d.product_id, title: d.title || "", original_price: d.original_price,
       flash_price: d.flash_price, stock_limit: d.stock_limit,
-      start_time: d.start_time ? d.start_time.slice(0, 16) : "",
-      end_time: d.end_time ? d.end_time.slice(0, 16) : "",
+      start_time: fromMMT(d.start_time),
+      end_time: fromMMT(d.end_time),
       is_active: d.is_active, badge_text: d.badge_text, sort_order: d.sort_order,
     });
     setDialogOpen(true);
