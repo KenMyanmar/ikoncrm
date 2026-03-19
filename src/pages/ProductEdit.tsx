@@ -131,7 +131,7 @@ export default function ProductEdit() {
         other_code: form.other_code,
         brand_id: form.brand_id || null,
         category_id: form.category_id || null,
-        group_id: form.group_id || null,
+        
         unit_of_measure: form.unit_of_measure,
         packing: form.packing,
         item_type: form.item_type,
