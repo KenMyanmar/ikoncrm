@@ -61,7 +61,7 @@ const emptyForm = {
 
 export default function ProductEdit() {
   const { id } = useParams<{ id: string }>();
-  const isNew = id === "new";
+  const isNew = !id || id === "new";
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { staff } = useStaff();
