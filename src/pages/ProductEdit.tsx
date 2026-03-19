@@ -101,13 +101,6 @@ export default function ProductEdit() {
     },
   });
 
-  const { data: groups } = useQuery({
-    queryKey: ["groups-list"],
-    queryFn: async () => {
-      const { data } = await supabase.from("product_groups").select("id, name").order("name");
-      return data || [];
-    },
-  });
 
   // Initialize form & specs from product
   useEffect(() => {
