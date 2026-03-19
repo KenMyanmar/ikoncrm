@@ -816,6 +816,36 @@ export type Database = {
         }
         Relationships: []
       }
+      deletion_archive: {
+        Row: {
+          deleted_at: string | null
+          deleted_by: string | null
+          id: string
+          reason: string | null
+          record_data: Json
+          record_id: string
+          table_name: string
+        }
+        Insert: {
+          deleted_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          reason?: string | null
+          record_data: Json
+          record_id: string
+          table_name: string
+        }
+        Update: {
+          deleted_at?: string | null
+          deleted_by?: string | null
+          id?: string
+          reason?: string | null
+          record_data?: Json
+          record_id?: string
+          table_name?: string
+        }
+        Relationships: []
+      }
       delivery_assignments: {
         Row: {
           actual_route: Json | null
