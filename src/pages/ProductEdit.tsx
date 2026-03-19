@@ -549,17 +549,6 @@ export default function ProductEdit() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div>
-                  <Label className="text-xs">Group</Label>
-                  <Select value={form.group_id || ""} onValueChange={(v) => update("group_id", v || null)}>
-                    <SelectTrigger><SelectValue placeholder="Select group" /></SelectTrigger>
-                    <SelectContent>
-                      {(groups || []).map((g) => (
-                        <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
               </div>
               <div className="grid grid-cols-3 gap-4">
                 <div>
