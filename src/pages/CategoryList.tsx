@@ -4,8 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useStaff } from "@/contexts/StaffContext";
 import { logActivity } from "@/lib/activity";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent as AlertContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle as AlertTitle } from "@/components/ui/alert-dialog";
@@ -15,7 +15,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Plus, Edit, ChevronRight, ChevronDown, Trash2, FolderOpen, RotateCcw } from "lucide-react";
+import { Plus, Edit, ChevronRight, ChevronDown, Trash2, RotateCcw } from "lucide-react";
 
 const generateSlug = (name: string) =>
   name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
@@ -30,14 +30,7 @@ interface Category {
   product_count: number;
   depth: number | null;
   parent_id: string | null;
-  group_id: string | null;
   image_url: string | null;
-}
-
-interface ProductGroup {
-  id: string;
-  name: string;
-  sort_order: number;
 }
 
 export default function CategoryList() {
@@ -54,17 +47,9 @@ export default function CategoryList() {
     queryFn: async () => {
       const { data } = await supabase
         .from("categories")
-        .select("id, name, slug, description, is_active, sort_order, product_count, depth, parent_id, group_id, image_url")
+        .select("id, name, slug, description, is_active, sort_order, product_count, depth, parent_id, image_url")
         .order("sort_order");
       return (data || []) as Category[];
-    },
-  });
-
-  const { data: groups } = useQuery({
-    queryKey: ["product-groups"],
-    queryFn: async () => {
-      const { data } = await supabase.from("product_groups").select("id, name, sort_order").order("sort_order");
-      return (data || []) as ProductGroup[];
     },
   });
 
@@ -74,9 +59,9 @@ export default function CategoryList() {
     return showInactive ? categories : categories.filter(c => c.is_active);
   }, [categories, showInactive]);
 
-  // Build tree structure grouped by product_groups
+  // Build tree: main categories (depth=0) with their sub-categories (depth=1)
   const tree = useMemo(() => {
-    if (!filteredCategories || !groups) return [];
+    if (!filteredCategories) return [];
 
     const parents = filteredCategories.filter(c => (c.depth ?? 0) === 0);
     const children = filteredCategories.filter(c => (c.depth ?? 0) === 1);
@@ -87,21 +72,11 @@ export default function CategoryList() {
       childrenByParent.set(c.parent_id!, list);
     });
 
-    const ungroupedParents = parents.filter(p => !p.group_id);
-
-    return [
-      ...groups.map(g => ({
-        group: g,
-        parents: parents
-          .filter(p => p.group_id === g.id)
-          .map(p => ({ ...p, children: childrenByParent.get(p.id) || [] })),
-      })),
-      ...(ungroupedParents.length > 0 ? [{
-        group: { id: "__ungrouped", name: "Ungrouped", sort_order: 999 } as ProductGroup,
-        parents: ungroupedParents.map(p => ({ ...p, children: childrenByParent.get(p.id) || [] })),
-      }] : []),
-    ].filter(g => g.parents.length > 0);
-  }, [filteredCategories, groups]);
+    return parents.map(p => ({
+      parent: p,
+      children: childrenByParent.get(p.id) || [],
+    }));
+  }, [filteredCategories]);
 
   const childCountMap = useMemo(() => {
     const map = new Map<string, number>();
@@ -129,7 +104,6 @@ export default function CategoryList() {
         description: cat.description,
         is_active: cat.is_active,
         sort_order: cat.sort_order || 0,
-        group_id: cat.group_id === "none" ? null : (cat.group_id || null),
         parent_id: resolvedParentId,
         depth: resolvedParentId ? 1 : 0,
         image_url: cat.image_url || null,
@@ -154,7 +128,6 @@ export default function CategoryList() {
 
   const deleteMutation = useMutation({
     mutationFn: async (catId: string) => {
-      // Check for assigned products
       const { count: productCount } = await supabase
         .from("products")
         .select("id", { count: "exact", head: true })
@@ -164,7 +137,6 @@ export default function CategoryList() {
         throw new Error(`Cannot deactivate: ${productCount} products are assigned to this category. Reassign them first.`);
       }
 
-      // Check for active subcategories
       const { count: childCount } = await supabase
         .from("categories")
         .select("id", { count: "exact", head: true })
@@ -201,9 +173,9 @@ export default function CategoryList() {
 
   const openEdit = (cat?: any) => {
     if (cat) {
-      setEditing({ ...cat, parent_id: cat.parent_id || "none", group_id: cat.group_id || "none" });
+      setEditing({ ...cat, parent_id: cat.parent_id || "none" });
     } else {
-      setEditing({ name: "", slug: "", description: "", is_active: true, sort_order: 0, group_id: "none", parent_id: "none", image_url: null });
+      setEditing({ name: "", slug: "", description: "", is_active: true, sort_order: 0, parent_id: "none", image_url: null });
     }
     setOpen(true);
   };
@@ -213,6 +185,15 @@ export default function CategoryList() {
   }, [categories, editing?.id]);
 
   const hasChildren = editing?.id ? (childCountMap.get(editing.id) || 0) > 0 : false;
+
+  // Calculate aggregated product count for main categories
+  const parentProductCount = useMemo(() => {
+    const map = new Map<string, number>();
+    (categories || []).filter(c => (c.depth ?? 0) === 1 && c.parent_id).forEach(c => {
+      map.set(c.parent_id!, (map.get(c.parent_id!) || 0) + c.product_count);
+    });
+    return map;
+  }, [categories]);
 
   return (
     <div className="space-y-4">
@@ -244,89 +225,77 @@ export default function CategoryList() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {tree.map(({ group, parents }) => (
+              {tree.map(({ parent, children }) => (
                 <>
-                  <TableRow key={`g-${group.id}`} className="bg-muted/50 hover:bg-muted/50">
-                    <TableCell colSpan={7} className="py-2">
-                      <div className="flex items-center gap-2">
-                        <FolderOpen className="h-4 w-4 text-primary" />
-                        <span className="font-semibold text-sm text-foreground">{group.name}</span>
-                        <Badge variant="secondary" className="text-[10px]">{parents.length}</Badge>
+                  <TableRow key={parent.id} className={`cursor-pointer ${!parent.is_active ? "opacity-50" : ""}`}>
+                    <TableCell className="w-8 px-2">
+                      {children.length > 0 ? (
+                        <button onClick={() => toggleExpand(parent.id)} className="p-0.5 rounded hover:bg-muted">
+                          {expandedIds.has(parent.id) ? (
+                            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                          ) : (
+                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                          )}
+                        </button>
+                      ) : <div className="w-5" />}
+                    </TableCell>
+                    <TableCell className="font-medium">
+                      {parent.name}
+                      {!parent.is_active && <Badge variant="outline" className="ml-2 text-[10px]">Inactive</Badge>}
+                      <Badge variant="secondary" className="ml-2 text-[10px]">{children.length} sub</Badge>
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{parent.slug}</TableCell>
+                    <TableCell>{parentProductCount.get(parent.id) || parent.product_count}</TableCell>
+                    <TableCell>{parent.is_active ? "✓" : "—"}</TableCell>
+                    <TableCell>{parent.sort_order}</TableCell>
+                    <TableCell>
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="sm" onClick={() => openEdit(parent)}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        {parent.is_active ? (
+                          <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setDeleteTarget({ id: parent.id, name: parent.name }); }}>
+                            <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                          </Button>
+                        ) : (
+                          <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); reactivateMutation.mutate({ id: parent.id, name: parent.name }); }}>
+                            <RotateCcw className="h-3.5 w-3.5 text-primary" />
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
-                  {parents.map(parent => (
-                    <>
-                      <TableRow key={parent.id} className={`cursor-pointer ${!parent.is_active ? "opacity-50" : ""}`}>
-                        <TableCell className="w-8 px-2">
-                          {parent.children.length > 0 ? (
-                            <button onClick={() => toggleExpand(parent.id)} className="p-0.5 rounded hover:bg-muted">
-                              {expandedIds.has(parent.id) ? (
-                                <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                              ) : (
-                                <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                              )}
-                            </button>
-                          ) : <div className="w-5" />}
-                        </TableCell>
-                        <TableCell className="font-medium">
-                          {parent.name}
-                          {!parent.is_active && <Badge variant="outline" className="ml-2 text-[10px]">Inactive</Badge>}
-                        </TableCell>
-                        <TableCell className="text-xs text-muted-foreground">{parent.slug}</TableCell>
-                        <TableCell>{parent.product_count}</TableCell>
-                        <TableCell>{parent.is_active ? "✓" : "—"}</TableCell>
-                        <TableCell>{parent.sort_order}</TableCell>
-                        <TableCell>
-                          <div className="flex gap-1">
-                            <Button variant="ghost" size="sm" onClick={() => openEdit(parent)}>
-                              <Edit className="h-4 w-4" />
+                  {expandedIds.has(parent.id) && children.map(child => (
+                    <TableRow key={child.id} className={`bg-muted/20 ${!child.is_active ? "opacity-50" : ""}`}>
+                      <TableCell className="w-8" />
+                      <TableCell>
+                        <div className="flex items-center gap-2 pl-4">
+                          <span className="text-muted-foreground text-xs">└</span>
+                          <span className="text-sm">{child.name}</span>
+                          {!child.is_active && <Badge variant="outline" className="text-[10px]">Inactive</Badge>}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground">{child.slug}</TableCell>
+                      <TableCell>{child.product_count}</TableCell>
+                      <TableCell>{child.is_active ? "✓" : "—"}</TableCell>
+                      <TableCell>{child.sort_order}</TableCell>
+                      <TableCell>
+                        <div className="flex gap-1">
+                          <Button variant="ghost" size="sm" onClick={() => openEdit(child)}>
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          {child.is_active ? (
+                            <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setDeleteTarget({ id: child.id, name: child.name }); }}>
+                              <Trash2 className="h-3.5 w-3.5 text-destructive" />
                             </Button>
-                            {parent.is_active ? (
-                              <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setDeleteTarget({ id: parent.id, name: parent.name }); }}>
-                                <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                              </Button>
-                            ) : (
-                              <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); reactivateMutation.mutate({ id: parent.id, name: parent.name }); }}>
-                                <RotateCcw className="h-3.5 w-3.5 text-primary" />
-                              </Button>
-                            )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                      {expandedIds.has(parent.id) && parent.children.map(child => (
-                        <TableRow key={child.id} className={`bg-muted/20 ${!child.is_active ? "opacity-50" : ""}`}>
-                          <TableCell className="w-8" />
-                          <TableCell>
-                            <div className="flex items-center gap-2 pl-4">
-                              <span className="text-muted-foreground text-xs">└</span>
-                              <span className="text-sm">{child.name}</span>
-                              {!child.is_active && <Badge variant="outline" className="text-[10px]">Inactive</Badge>}
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-xs text-muted-foreground">{child.slug}</TableCell>
-                          <TableCell>{child.product_count}</TableCell>
-                          <TableCell>{child.is_active ? "✓" : "—"}</TableCell>
-                          <TableCell>{child.sort_order}</TableCell>
-                          <TableCell>
-                            <div className="flex gap-1">
-                              <Button variant="ghost" size="sm" onClick={() => openEdit(child)}>
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              {child.is_active ? (
-                                <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setDeleteTarget({ id: child.id, name: child.name }); }}>
-                                  <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                                </Button>
-                              ) : (
-                                <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); reactivateMutation.mutate({ id: child.id, name: child.name }); }}>
-                                  <RotateCcw className="h-3.5 w-3.5 text-primary" />
-                                </Button>
-                              )}
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </>
+                          ) : (
+                            <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); reactivateMutation.mutate({ id: child.id, name: child.name }); }}>
+                              <RotateCcw className="h-3.5 w-3.5 text-primary" />
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
                   ))}
                 </>
               ))}
@@ -364,18 +333,6 @@ export default function CategoryList() {
                   onChange={e => setEditing({ ...editing, slug: e.target.value })}
                   placeholder="Auto-generated from name"
                 />
-              </div>
-              <div>
-                <Label>Group</Label>
-                <Select value={editing.group_id || "none"} onValueChange={v => setEditing({ ...editing, group_id: v })}>
-                  <SelectTrigger><SelectValue placeholder="Select group" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">None</SelectItem>
-                    {(groups || []).map(g => (
-                      <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
               </div>
               <div>
                 <Label>Parent Category {hasChildren && <span className="text-xs text-muted-foreground">(has children — cannot change)</span>}</Label>

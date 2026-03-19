@@ -35,7 +35,7 @@ const emptyForm = {
   features: "",
   brand_id: null,
   category_id: null,
-  group_id: null,
+  
   unit_of_measure: "",
   packing: "",
   item_type: "",
@@ -101,13 +101,6 @@ export default function ProductEdit() {
     },
   });
 
-  const { data: groups } = useQuery({
-    queryKey: ["groups-list"],
-    queryFn: async () => {
-      const { data } = await supabase.from("product_groups").select("id, name").order("name");
-      return data || [];
-    },
-  });
 
   // Initialize form & specs from product
   useEffect(() => {
@@ -138,7 +131,7 @@ export default function ProductEdit() {
         other_code: form.other_code,
         brand_id: form.brand_id || null,
         category_id: form.category_id || null,
-        group_id: form.group_id || null,
+        
         unit_of_measure: form.unit_of_measure,
         packing: form.packing,
         item_type: form.item_type,
@@ -553,17 +546,6 @@ export default function ProductEdit() {
                           );
                         });
                       })()}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label className="text-xs">Group</Label>
-                  <Select value={form.group_id || ""} onValueChange={(v) => update("group_id", v || null)}>
-                    <SelectTrigger><SelectValue placeholder="Select group" /></SelectTrigger>
-                    <SelectContent>
-                      {(groups || []).map((g) => (
-                        <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>
-                      ))}
                     </SelectContent>
                   </Select>
                 </div>
