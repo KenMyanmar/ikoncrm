@@ -8,13 +8,14 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent as AlertContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle as AlertTitle } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Plus, Edit, ChevronRight, ChevronDown, Trash2, FolderOpen } from "lucide-react";
+import { Plus, Edit, ChevronRight, ChevronDown, Trash2, FolderOpen, RotateCcw } from "lucide-react";
 
 const generateSlug = (name: string) =>
   name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
@@ -45,6 +46,8 @@ export default function CategoryList() {
   const [editing, setEditing] = useState<any>(null);
   const [open, setOpen] = useState(false);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+  const [showInactive, setShowInactive] = useState(false);
 
   const { data: categories } = useQuery({
     queryKey: ["admin-categories"],
@@ -65,12 +68,18 @@ export default function CategoryList() {
     },
   });
 
+  // Filter categories based on showInactive toggle
+  const filteredCategories = useMemo(() => {
+    if (!categories) return [];
+    return showInactive ? categories : categories.filter(c => c.is_active);
+  }, [categories, showInactive]);
+
   // Build tree structure grouped by product_groups
   const tree = useMemo(() => {
-    if (!categories || !groups) return [];
+    if (!filteredCategories || !groups) return [];
 
-    const parents = categories.filter(c => (c.depth ?? 0) === 0);
-    const children = categories.filter(c => (c.depth ?? 0) === 1);
+    const parents = filteredCategories.filter(c => (c.depth ?? 0) === 0);
+    const children = filteredCategories.filter(c => (c.depth ?? 0) === 1);
     const childrenByParent = new Map<string, Category[]>();
     children.forEach(c => {
       const list = childrenByParent.get(c.parent_id!) || [];
@@ -92,7 +101,7 @@ export default function CategoryList() {
         parents: ungroupedParents.map(p => ({ ...p, children: childrenByParent.get(p.id) || [] })),
       }] : []),
     ].filter(g => g.parents.length > 0);
-  }, [categories, groups]);
+  }, [filteredCategories, groups]);
 
   const childCountMap = useMemo(() => {
     const map = new Map<string, number>();
@@ -144,19 +153,48 @@ export default function CategoryList() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (cat: any) => {
-      const cc = childCountMap.get(cat.id) || 0;
-      if (cc > 0) {
-        throw new Error(`This category has ${cc} sub-categories. Delete them first.`);
+    mutationFn: async (catId: string) => {
+      // Check for assigned products
+      const { count: productCount } = await supabase
+        .from("products")
+        .select("id", { count: "exact", head: true })
+        .eq("category_id", catId);
+
+      if (productCount && productCount > 0) {
+        throw new Error(`Cannot deactivate: ${productCount} products are assigned to this category. Reassign them first.`);
       }
-      const { error } = await supabase.from("categories").delete().eq("id", cat.id);
+
+      // Check for active subcategories
+      const { count: childCount } = await supabase
+        .from("categories")
+        .select("id", { count: "exact", head: true })
+        .eq("parent_id", catId)
+        .eq("is_active", true);
+
+      if (childCount && childCount > 0) {
+        throw new Error(`Cannot deactivate: This category has ${childCount} active subcategories. Deactivate them first.`);
+      }
+
+      const { error } = await supabase.from("categories").update({ is_active: false }).eq("id", catId);
       if (error) throw error;
-      if (staff) await logActivity(staff.id, "deleted", "category", cat.id, cat.name);
+      if (staff) await logActivity(staff.id, "deactivated", "category", catId, deleteTarget?.name);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-categories"] });
-      setOpen(false);
-      toast.success("Category deleted");
+      toast.success("Category deactivated");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const reactivateMutation = useMutation({
+    mutationFn: async (cat: { id: string; name: string }) => {
+      const { error } = await supabase.from("categories").update({ is_active: true }).eq("id", cat.id);
+      if (error) throw error;
+      if (staff) await logActivity(staff.id, "reactivated", "category", cat.id, cat.name);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-categories"] });
+      toast.success("Category reactivated");
     },
     onError: (e: any) => toast.error(e.message),
   });
@@ -180,9 +218,15 @@ export default function CategoryList() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-foreground">Categories</h1>
-        <Button size="sm" onClick={() => openEdit()}>
-          <Plus className="h-4 w-4 mr-1" /> Add Category
-        </Button>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <Switch checked={showInactive} onCheckedChange={setShowInactive} />
+            <Label className="text-sm">Show inactive</Label>
+          </div>
+          <Button size="sm" onClick={() => openEdit()}>
+            <Plus className="h-4 w-4 mr-1" /> Add Category
+          </Button>
+        </div>
       </div>
 
       <Card>
@@ -202,7 +246,6 @@ export default function CategoryList() {
             <TableBody>
               {tree.map(({ group, parents }) => (
                 <>
-                  {/* Group header */}
                   <TableRow key={`g-${group.id}`} className="bg-muted/50 hover:bg-muted/50">
                     <TableCell colSpan={7} className="py-2">
                       <div className="flex items-center gap-2">
@@ -212,10 +255,9 @@ export default function CategoryList() {
                       </div>
                     </TableCell>
                   </TableRow>
-                  {/* Parent categories */}
                   {parents.map(parent => (
                     <>
-                      <TableRow key={parent.id} className="cursor-pointer">
+                      <TableRow key={parent.id} className={`cursor-pointer ${!parent.is_active ? "opacity-50" : ""}`}>
                         <TableCell className="w-8 px-2">
                           {parent.children.length > 0 ? (
                             <button onClick={() => toggleExpand(parent.id)} className="p-0.5 rounded hover:bg-muted">
@@ -227,7 +269,10 @@ export default function CategoryList() {
                             </button>
                           ) : <div className="w-5" />}
                         </TableCell>
-                        <TableCell className="font-medium">{parent.name}</TableCell>
+                        <TableCell className="font-medium">
+                          {parent.name}
+                          {!parent.is_active && <Badge variant="outline" className="ml-2 text-[10px]">Inactive</Badge>}
+                        </TableCell>
                         <TableCell className="text-xs text-muted-foreground">{parent.slug}</TableCell>
                         <TableCell>{parent.product_count}</TableCell>
                         <TableCell>{parent.is_active ? "✓" : "—"}</TableCell>
@@ -237,20 +282,26 @@ export default function CategoryList() {
                             <Button variant="ghost" size="sm" onClick={() => openEdit(parent)}>
                               <Edit className="h-4 w-4" />
                             </Button>
-                            <Button variant="ghost" size="sm" onClick={() => deleteMutation.mutate(parent)}>
-                              <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                            </Button>
+                            {parent.is_active ? (
+                              <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setDeleteTarget({ id: parent.id, name: parent.name }); }}>
+                                <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                              </Button>
+                            ) : (
+                              <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); reactivateMutation.mutate({ id: parent.id, name: parent.name }); }}>
+                                <RotateCcw className="h-3.5 w-3.5 text-primary" />
+                              </Button>
+                            )}
                           </div>
                         </TableCell>
                       </TableRow>
-                      {/* Sub-categories */}
                       {expandedIds.has(parent.id) && parent.children.map(child => (
-                        <TableRow key={child.id} className="bg-muted/20">
+                        <TableRow key={child.id} className={`bg-muted/20 ${!child.is_active ? "opacity-50" : ""}`}>
                           <TableCell className="w-8" />
                           <TableCell>
                             <div className="flex items-center gap-2 pl-4">
                               <span className="text-muted-foreground text-xs">└</span>
                               <span className="text-sm">{child.name}</span>
+                              {!child.is_active && <Badge variant="outline" className="text-[10px]">Inactive</Badge>}
                             </div>
                           </TableCell>
                           <TableCell className="text-xs text-muted-foreground">{child.slug}</TableCell>
@@ -262,9 +313,15 @@ export default function CategoryList() {
                               <Button variant="ghost" size="sm" onClick={() => openEdit(child)}>
                                 <Edit className="h-4 w-4" />
                               </Button>
-                              <Button variant="ghost" size="sm" onClick={() => deleteMutation.mutate(child)}>
-                                <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                              </Button>
+                              {child.is_active ? (
+                                <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setDeleteTarget({ id: child.id, name: child.name }); }}>
+                                  <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                                </Button>
+                              ) : (
+                                <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); reactivateMutation.mutate({ id: child.id, name: child.name }); }}>
+                                  <RotateCcw className="h-3.5 w-3.5 text-primary" />
+                                </Button>
+                              )}
                             </div>
                           </TableCell>
                         </TableRow>
@@ -278,6 +335,7 @@ export default function CategoryList() {
         </CardContent>
       </Card>
 
+      {/* Edit/Create Dialog */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>
@@ -358,6 +416,32 @@ export default function CategoryList() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Deactivate Confirmation Dialog */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertContent>
+          <AlertDialogHeader>
+            <AlertTitle>Deactivate Category</AlertTitle>
+            <AlertDialogDescription>
+              Are you sure you want to deactivate "{deleteTarget?.name}"?
+              It will be hidden from the E-Mall but can be reactivated later.
+              This will NOT delete any products.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (deleteTarget) deleteMutation.mutate(deleteTarget.id);
+                setDeleteTarget(null);
+              }}
+            >
+              Deactivate
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertContent>
+      </AlertDialog>
     </div>
   );
 }
