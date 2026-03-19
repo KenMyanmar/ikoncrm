@@ -35,7 +35,7 @@ const emptyForm = {
   features: "",
   brand_id: null,
   category_id: null,
-  group_id: null,
+  
   unit_of_measure: "",
   packing: "",
   item_type: "",
