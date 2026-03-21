@@ -36,6 +36,7 @@ import RiskRevenue from "@/pages/RiskRevenue";
 import Automations from "@/pages/Automations";
 import CrmTasks from "@/pages/CrmTasks";
 import WeeklyReview from "@/pages/WeeklyReview";
+import CareTips from "@/pages/CareTips";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
