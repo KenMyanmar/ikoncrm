@@ -30,6 +30,7 @@ const navGroups = [
       { title: "Products", url: "/products", icon: Package, module: "products" },
       { title: "Categories", url: "/categories", icon: Grid3X3, module: "categories" },
       { title: "Brands", url: "/brands", icon: Tag, module: "brands" },
+      { title: "Care Tips", url: "/care-tips", icon: Heart, module: "categories" },
     ],
   },
   {

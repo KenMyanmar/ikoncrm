@@ -60,6 +60,7 @@ const App = () => (
                 <Route path="products/bulk-price" element={<ProtectedRoute module="products"><BulkPriceUpload /></ProtectedRoute>} />
                 <Route path="categories" element={<ProtectedRoute module="categories"><CategoryList /></ProtectedRoute>} />
                 <Route path="brands" element={<ProtectedRoute module="brands"><BrandList /></ProtectedRoute>} />
+                <Route path="care-tips" element={<ProtectedRoute module="categories"><CareTips /></ProtectedRoute>} />
                 <Route path="orders" element={<ProtectedRoute module="orders"><OrderList /></ProtectedRoute>} />
                 <Route path="orders/create" element={<ProtectedRoute module="orders"><CreateOrder /></ProtectedRoute>} />
                 <Route path="orders/:id" element={<ProtectedRoute module="orders"><OrderDetail /></ProtectedRoute>} />
