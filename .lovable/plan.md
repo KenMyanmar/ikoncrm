@@ -1,34 +1,57 @@
 
 
-# Care Tips Management Page
+# Articles & Blog Management — CRM
 
 ## Summary
-Create a new Care Tips management page and wire it into the sidebar and router. Single-page design with category selector + tip cards + add/edit dialog.
+Create two new pages (list + editor) for managing blog articles, wire into router and sidebar. Uses existing `articles` table (Migration 18). No database changes needed.
 
 ## Files to Create
 
-### 1. `src/pages/CareTips.tsx` (NEW)
-- Category selector dropdown at top (depth=0, is_active=true categories)
-- Tips list for selected category, ordered by `sort_order`
-- Each tip card: title, tip_text, icon badge, sort_order, active Switch toggle, Edit/Delete buttons
-- "Add New Tip" button opens a Dialog with fields: title, tip_text, icon (Select from check/alert-triangle/info/star/shield), sort_order
-- Edit opens same dialog pre-filled
-- Delete with AlertDialog confirmation
-- Title batch-update: when title changes, update all tips in that category
-- Empty state when no tips exist
-- Uses `useQuery` + `useMutation` with `@tanstack/react-query`
+### 1. `src/pages/ArticlesManagement.tsx` — Article list page
+- Status filter tabs: All / Published / Draft / Archived (with counts from query)
+- Search input filtering by title (ilike)
+- Responsive card grid (3 cols desktop, 2 tablet, 1 mobile)
+- Each card: featured image (or gradient placeholder), title, date, view count, tag badges, excerpt, status dot, Edit button
+- Sort dropdown: newest, most viewed, recently updated
+- "+ New Article" button navigates to `/articles/new`
+- Edit button navigates to `/articles/{id}/edit`
+
+### 2. `src/pages/ArticleEditor.tsx` — Full-page article editor
+- Detects create vs edit mode via `useParams` (same pattern as ProductEdit: `!id || id === "new"`)
+- Fields: title, slug (auto-generated, editable, shows URL preview), excerpt (max 200 chars), featured image (ImageUpload component to `article-images` bucket or URL input), body (textarea with markdown/HTML), tags (checkbox group: kitchen, insights, brands, care, guides), category_id (select depth=0 categories), is_featured checkbox, meta_title, meta_description
+- **Rich text**: Use a plain `<Textarea>` for body content (HTML/markdown). Keep it simple — no external WYSIWYG dependency. Staff can write formatted content.
+- Slug auto-generation from title with `generateSlug` helper
+- "Back to Articles" link at top
+- Two action buttons: "Save Draft" (status=draft) + "Publish" (status=published)
+- If editing a published article: "Unpublish" option (with confirmation dialog)
+- `isSubmitting` guard to prevent double-submit
+- On save: insert or update via Supabase, invalidate query, navigate back or show toast
 
 ## Files to Modify
 
-### 2. `src/App.tsx`
-- Import `CareTips` page
-- Add route: `<Route path="care-tips" element={<ProtectedRoute module="categories"><CareTips /></ProtectedRoute>} />`
-- Uses `categories` module permission (staff+ can access)
+### 3. `src/App.tsx`
+- Import `ArticlesManagement` and `ArticleEditor`
+- Add routes inside the protected layout:
+  - `articles` → `ArticlesManagement` (module: `banners` — content management permission, same tier as banners)
+  - `articles/new` → `ArticleEditor` (before `articles/:id`)
+  - `articles/:id` → `ArticleEditor`
 
-### 3. `src/components/AdminSidebar.tsx`
-- Add `{ title: "Care Tips", url: "/care-tips", icon: Heart, module: "categories" }` to the Catalog group items (after Brands)
-- Import `Heart` from lucide-react
+### 4. `src/components/AdminSidebar.tsx`
+- Add `Newspaper` icon import from lucide-react
+- Add a "Content" nav group (between Marketing and Delivery) with:
+  - `{ title: "Articles", url: "/articles", icon: Newspaper, module: "banners" }`
+
+### 5. `src/contexts/StaffContext.tsx`
+- No changes needed — articles will use the `banners` module permission (staff with banner access can manage content). This keeps it simple without adding a new permission.
+
+## Technical Details
+- Featured image uses existing `ImageUpload` component with a new `article-images` storage bucket (need migration for bucket creation)
+- Actually, to avoid a migration, use the existing `banners` bucket or allow URL-only input for featured images
+- Tags stored as `text[]` array — checkbox group maps to array on save
+- `author_id` set from `staff.id`, `author_name` from `staff.full_name`
+- Category dropdown fetches `categories` where `depth=0, is_active=true`
+- Slug uniqueness: catch unique constraint error on save and show toast
 
 ## No database changes needed
-The `category_care_tips` table and RLS policies already exist.
+The `articles` table and RLS policies already exist from Migration 18.
 
