@@ -37,6 +37,8 @@ import Automations from "@/pages/Automations";
 import CrmTasks from "@/pages/CrmTasks";
 import WeeklyReview from "@/pages/WeeklyReview";
 import CareTips from "@/pages/CareTips";
+import ArticlesManagement from "@/pages/ArticlesManagement";
+import ArticleEditor from "@/pages/ArticleEditor";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
