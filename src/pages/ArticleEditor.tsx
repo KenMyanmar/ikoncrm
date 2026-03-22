@@ -146,11 +146,11 @@ export default function ArticleEditor() {
       if (isNew) {
         const { data, error } = await supabase
           .from("articles")
-          .insert({
+          .insert([{
             ...payload,
             author_id: staff?.id || null,
             author_name: staff?.full_name || null,
-          })
+          }])
           .select()
           .single();
         if (error) throw error;
