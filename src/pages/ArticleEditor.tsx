@@ -136,7 +136,7 @@ export default function ArticleEditor() {
         is_featured: form.is_featured,
         meta_title: form.meta_title || null,
         meta_description: form.meta_description || null,
-        status,
+        status: status as "draft" | "published" | "archived",
         ...(status === "published" && !article?.published_at
           ? { published_at: new Date().toISOString() }
           : {}),
