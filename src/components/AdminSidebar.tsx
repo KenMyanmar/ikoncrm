@@ -3,6 +3,7 @@ import {
   LayoutDashboard, Package, Grid3X3, Tag, ShoppingCart, FileText,
   Users, Image, UserCog, BarChart3, Activity, Settings, LogOut, Truck,
   Percent, Zap, Ticket, MessageSquare, Shield, ClipboardList, Heart,
+  Newspaper,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useStaff, hasPermission } from "@/contexts/StaffContext";
@@ -50,6 +51,12 @@ const navGroups = [
       { title: "Promotions", url: "/promotions", icon: Percent, module: "promotions" },
       { title: "Flash Deals", url: "/flash-deals", icon: Zap, module: "flash_deals" },
       { title: "Coupons", url: "/coupons", icon: Ticket, module: "coupons" },
+    ],
+  },
+  {
+    label: "Content",
+    items: [
+      { title: "Articles", url: "/articles", icon: Newspaper, module: "banners" },
     ],
   },
   {
