@@ -84,6 +84,9 @@ const App = () => (
                 <Route path="automations" element={<ProtectedRoute module="reports"><Automations /></ProtectedRoute>} />
                 <Route path="tasks" element={<ProtectedRoute module="orders"><CrmTasks /></ProtectedRoute>} />
                 <Route path="reports/weekly" element={<ProtectedRoute module="reports"><WeeklyReview /></ProtectedRoute>} />
+                <Route path="articles" element={<ProtectedRoute module="banners"><ArticlesManagement /></ProtectedRoute>} />
+                <Route path="articles/new" element={<ProtectedRoute module="banners"><ArticleEditor /></ProtectedRoute>} />
+                <Route path="articles/:id" element={<ProtectedRoute module="banners"><ArticleEditor /></ProtectedRoute>} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>

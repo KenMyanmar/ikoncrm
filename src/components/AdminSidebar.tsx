@@ -54,6 +54,12 @@ const navGroups = [
     ],
   },
   {
+    label: "Content",
+    items: [
+      { title: "Articles", url: "/articles", icon: Newspaper, module: "banners" },
+    ],
+  },
+  {
     label: "Delivery",
     items: [
       { title: "Delivery Management", url: "/my-deliveries", icon: Truck, module: "delivery" },
