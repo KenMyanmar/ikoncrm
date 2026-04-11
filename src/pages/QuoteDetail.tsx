@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+
 import { toast } from "sonner";
 import { ArrowLeft, CalendarIcon, Send, Save, ShoppingCart, UserPlus, ExternalLink } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
