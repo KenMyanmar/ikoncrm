@@ -836,6 +836,7 @@ export type Database = {
           customer_id: string
           direction: string
           id: string
+          is_auto: boolean | null
           metadata: Json | null
           order_id: string | null
           sent_at: string | null
@@ -851,6 +852,7 @@ export type Database = {
           customer_id: string
           direction?: string
           id?: string
+          is_auto?: boolean | null
           metadata?: Json | null
           order_id?: string | null
           sent_at?: string | null
@@ -866,6 +868,7 @@ export type Database = {
           customer_id?: string
           direction?: string
           id?: string
+          is_auto?: boolean | null
           metadata?: Json | null
           order_id?: string | null
           sent_at?: string | null

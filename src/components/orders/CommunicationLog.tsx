@@ -1,14 +1,17 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Mail, MessageSquare, Bot, Send, ChevronDown, ChevronUp } from "lucide-react";
+import { Mail, MessageSquare, Bot, Send, ChevronDown, ChevronUp, RefreshCw } from "lucide-react";
 import { formatRelativeTime } from "./orderConstants";
 import { useState } from "react";
+import { resendCommunication } from "@/lib/resendCommunication";
+import { toast } from "sonner";
 
 interface CommunicationLogProps {
   orderId: string;
+  customerEmail?: string;
   onSendMessage: () => void;
 }
 
@@ -18,6 +21,7 @@ const CHANNEL_ICONS: Record<string, typeof Mail> = {
 };
 
 const STATUS_BADGE: Record<string, { label: string; className: string }> = {
+  pending: { label: "Pending", className: "bg-yellow-100 text-yellow-800" },
   sent: { label: "Sent", className: "bg-success/10 text-success" },
   delivered: { label: "Delivered", className: "bg-success/10 text-success" },
   failed: { label: "Failed", className: "bg-destructive/10 text-destructive" },
@@ -25,8 +29,10 @@ const STATUS_BADGE: Record<string, { label: string; className: string }> = {
   read: { label: "Read", className: "bg-info/10 text-info" },
 };
 
-export function CommunicationLog({ orderId, onSendMessage }: CommunicationLogProps) {
+export function CommunicationLog({ orderId, customerEmail, onSendMessage }: CommunicationLogProps) {
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const [retryingIds, setRetryingIds] = useState<Set<string>>(new Set());
+  const queryClient = useQueryClient();
 
   const { data: communications } = useQuery({
     queryKey: ["order-communications", orderId],
@@ -48,6 +54,37 @@ export function CommunicationLog({ orderId, onSendMessage }: CommunicationLogPro
     });
   };
 
+  const handleRetry = async (comm: any) => {
+    const email = customerEmail;
+    if (!email) {
+      toast.error("No customer email available for resend");
+      return;
+    }
+
+    setRetryingIds((prev) => new Set(prev).add(comm.id));
+
+    const result = await resendCommunication(
+      comm.id,
+      email,
+      comm.subject || "Order Update",
+      comm.body
+    );
+
+    setRetryingIds((prev) => {
+      const next = new Set(prev);
+      next.delete(comm.id);
+      return next;
+    });
+
+    if (result.success) {
+      toast.success("Message resent successfully");
+    } else {
+      toast.error(`Resend failed: ${result.error}`);
+    }
+
+    queryClient.invalidateQueries({ queryKey: ["order-communications", orderId] });
+  };
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
@@ -64,7 +101,8 @@ export function CommunicationLog({ orderId, onSendMessage }: CommunicationLogPro
           const Icon = CHANNEL_ICONS[comm.channel] || MessageSquare;
           const statusInfo = STATUS_BADGE[comm.status] || STATUS_BADGE.sent;
           const isExpanded = expandedIds.has(comm.id);
-          const isAuto = !!comm.template_key && !comm.sent_by;
+          const isAuto = !!comm.is_auto;
+          const isRetrying = retryingIds.has(comm.id);
           const bodyPreview = comm.body?.length > 100 && !isExpanded
             ? comm.body.slice(0, 100) + "…"
             : comm.body;
@@ -81,9 +119,23 @@ export function CommunicationLog({ orderId, onSendMessage }: CommunicationLogPro
                     </Badge>
                   )}
                 </div>
-                <Badge variant="outline" className={`text-[10px] shrink-0 ${statusInfo.className}`}>
-                  {statusInfo.label}
-                </Badge>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <Badge variant="outline" className={`text-[10px] ${statusInfo.className}`}>
+                    {statusInfo.label}
+                  </Badge>
+                  {comm.status === "failed" && customerEmail && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-6 w-6 p-0"
+                      disabled={isRetrying}
+                      onClick={() => handleRetry(comm)}
+                      title="Retry sending"
+                    >
+                      <RefreshCw className={`h-3 w-3 ${isRetrying ? "animate-spin" : ""}`} />
+                    </Button>
+                  )}
+                </div>
               </div>
               <p className="text-xs text-muted-foreground">
                 {comm.staff_profiles?.full_name || (isAuto ? "System (auto)" : "Staff")} · {formatRelativeTime(comm.created_at)}
