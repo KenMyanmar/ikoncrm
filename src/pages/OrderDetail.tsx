@@ -259,7 +259,7 @@ export default function OrderDetail() {
           </Card>
 
           {/* Communications */}
-          <CommunicationLog orderId={id!} onSendMessage={() => { setPreselectedTemplate(""); setSendMessageDialog(true); }} />
+          <CommunicationLog orderId={id!} customerEmail={(order as any)?.customers?.email || undefined} onSendMessage={() => { setPreselectedTemplate(""); setSendMessageDialog(true); }} />
         </div>
 
         {/* Right Column */}
