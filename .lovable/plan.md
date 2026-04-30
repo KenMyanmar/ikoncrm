@@ -1,50 +1,47 @@
-
-
-# Communication Log Enhancement + Resend Utility
+# Add Contact Inquiries Page
 
 ## Summary
-Two focused changes: (1) extract a reusable `resendCommunication` utility, (2) enhance `CommunicationLog.tsx` with pending status, resend button, and improved `is_auto` detection.
+New CRM page that lists submissions from the ikonmart.com Contact Us form. Table, RLS, and authenticated SELECT policy already exist — no DB changes.
 
-No auto-send wiring needed — the DB trigger handles that. No new files for status-change handlers.
+## Schema reconciliation (verified against live DB)
+The actual `contact_inquiries` table differs from the original prompt:
+- No `subject` column
+- Has `phone` (text, nullable), `business_type` (text[], not null), `inquiry_type` (text[], not null)
+- `message` is nullable
 
-## File 1: `src/lib/resendCommunication.ts` (NEW)
+UI will reflect the actual schema.
 
-Simple utility function that re-invokes the `send-order-email` edge function for a given `customer_communications` record:
+Columns shown in table:
+- Created (relative time, absolute on hover via `title`)
+- Name
+- Email (mailto link)
+- Phone (tel link, if present)
+- Company (— if null)
+- Inquiry Type (badges from array)
+- Business Type (badges from array)
+- Message (truncated, click row to expand)
 
-- Accepts `communicationId`, `toEmail`, `subject`, `body`
-- Sets communication status to `pending` before invoking
-- Calls `supabase.functions.invoke("send-order-email", { body: { to, subject, body, communication_id } })`
-- Edge function already handles marking `delivered` or `failed`
-- Returns `{ success, error }` — never throws
-- Used by the resend button in CommunicationLog and could be used by SendMessageDialog in the future
+## File 1: `src/pages/ContactInquiries.tsx` (NEW)
+- React Query: `useQuery(["contact-inquiries"], …)` selecting `*` from `contact_inquiries` ordered by `created_at desc`
+- Header: title "Contact Inquiries", subtitle, total count badge, Refresh button
+- Search input: client-side filter across name / email / company / message
+- Table layout matching `OrderList` / `QuoteList` styling (Card wrapper, Table, Skeleton loader, empty state)
+- Click row opens Dialog showing full details (all fields, formatted arrays, full message, copy-email button)
+- Loading: skeleton rows; Error: toast
 
-## File 2: `src/components/orders/CommunicationLog.tsx` (MODIFY)
+## File 2: `src/App.tsx` (MODIFY)
+- Import `ContactInquiries`
+- Add route inside protected `AdminLayout`:
+  `<Route path="inquiries" element={<ProtectedRoute module="customers"><ContactInquiries /></ProtectedRoute>} />`
 
-### Add `pending` to STATUS_BADGE map
-- `pending: { label: "Pending", className: "bg-yellow-100 text-yellow-800" }`
+## File 3: `src/components/AdminSidebar.tsx` (MODIFY)
+- Add `Mail` to the `lucide-react` import
+- Insert into the **Sales** nav group, after Reviews:
+  `{ title: "Inquiries", url: "/inquiries", icon: Mail, module: "customers" },`
 
-### Improve `is_auto` detection
-- Use `comm.is_auto` field (exists in DB) instead of heuristic `!!comm.template_key && !comm.sent_by`
+## No database changes
+- Table exists with RLS enabled (public INSERT + authenticated SELECT)
+- `contact_inquiries` already present in generated `types.ts`
 
-### Add Resend button on failed communications
-- Small "Retry" button (RefreshCw icon) visible when `comm.status === 'failed'`
-- On click: calls `resendCommunication()` with the comm's data
-- Needs customer email — add it to the query join: fetch order's customer email via the existing order_id → orders → customers join, or pass it as a prop
-- Approach: add `customerEmail` prop to CommunicationLogProps (parent already has order data with customer email)
-- Shows loading state on the button, toast on success/failure
-- Invalidates `order-communications` query on completion
-
-### No other changes
-- Existing status badges, expand/collapse, channel icons, Auto badge all stay
-
-## Files NOT modified
-- `PaymentVerificationDialog.tsx` — no change (DB trigger handles auto-send)
-- `DeliveryAssignDialog.tsx` — no change
-- `OrderList.tsx` — no change
-- `OrderDetail.tsx` — no change
-- `MyDeliveries.tsx` — no change
-- `SendMessageDialog.tsx` — no change (already works, already calls edge function)
-- `send-order-email` edge function — no change (already handles Resend + status updates)
-
-## No database changes needed
-
+## Files NOT changed
+- Anything else
