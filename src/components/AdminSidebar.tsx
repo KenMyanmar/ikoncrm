@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Package, Grid3X3, Tag, ShoppingCart, FileText,
   Users, Image, UserCog, BarChart3, Activity, Settings, LogOut, Truck,
   Percent, Zap, Ticket, MessageSquare, Shield, ClipboardList, Heart,
-  Newspaper,
+  Newspaper, Mail,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useStaff, hasPermission } from "@/contexts/StaffContext";
@@ -41,6 +41,7 @@ const navGroups = [
       { title: "Quotes", url: "/quotes", icon: FileText, module: "quotes" },
       { title: "Customers", url: "/customers", icon: Users, module: "customers" },
       { title: "Reviews", url: "/reviews", icon: MessageSquare, module: "reviews" },
+      { title: "Inquiries", url: "/inquiries", icon: Mail, module: "customers" },
       { title: "Tasks", url: "/tasks", icon: ClipboardList, module: "orders", badgeKey: "tasks" },
     ],
   },
