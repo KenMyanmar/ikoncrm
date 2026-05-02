@@ -331,6 +331,39 @@ export type Database = {
         }
         Relationships: []
       }
+      business_types: {
+        Row: {
+          created_at: string
+          id: string
+          image_url: string | null
+          is_active: boolean
+          label: string
+          link_url: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          label: string
+          link_url: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          label?: string
+          link_url?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       cart_items: {
         Row: {
           created_at: string
@@ -3140,8 +3173,8 @@ export type Database = {
         | { Args: { _user_id: string }; Returns: boolean }
       place_order: {
         Args: {
-          p_contact_name: string
-          p_contact_phone: string
+          p_contact_name?: string
+          p_contact_phone?: string
           p_coupon_code?: string
           p_customer_id: string
           p_customer_notes?: string
