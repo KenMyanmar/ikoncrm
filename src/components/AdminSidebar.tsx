@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Package, Grid3X3, Tag, ShoppingCart, FileText,
   Users, Image, UserCog, BarChart3, Activity, Settings, LogOut, Truck,
   Percent, Zap, Ticket, MessageSquare, Shield, ClipboardList, Heart,
-  Newspaper, Mail,
+  Newspaper, Mail, LayoutGrid,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useStaff, hasPermission } from "@/contexts/StaffContext";
@@ -49,6 +49,7 @@ const navGroups = [
     label: "Marketing",
     items: [
       { title: "Banners", url: "/banners", icon: Image, module: "banners" },
+      { title: "Homepage Sections", url: "/homepage-sections", icon: LayoutGrid, module: "banners" },
       { title: "Promotions", url: "/promotions", icon: Percent, module: "promotions" },
       { title: "Flash Deals", url: "/flash-deals", icon: Zap, module: "flash_deals" },
       { title: "Coupons", url: "/coupons", icon: Ticket, module: "coupons" },

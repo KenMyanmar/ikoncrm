@@ -40,6 +40,7 @@ import CareTips from "@/pages/CareTips";
 import ArticlesManagement from "@/pages/ArticlesManagement";
 import ArticleEditor from "@/pages/ArticleEditor";
 import ContactInquiries from "@/pages/ContactInquiries";
+import HomepageSections from "@/pages/HomepageSections";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -73,6 +74,7 @@ const App = () => (
                 <Route path="customers/:id" element={<ProtectedRoute module="customers"><CustomerDetail /></ProtectedRoute>} />
                 <Route path="inquiries" element={<ProtectedRoute module="customers"><ContactInquiries /></ProtectedRoute>} />
                 <Route path="banners" element={<ProtectedRoute module="banners"><BannerList /></ProtectedRoute>} />
+                <Route path="homepage-sections" element={<ProtectedRoute module="banners"><HomepageSections /></ProtectedRoute>} />
                 <Route path="staff" element={<ProtectedRoute module="staff"><StaffManagement /></ProtectedRoute>} />
                 <Route path="reports" element={<ProtectedRoute module="reports"><Reports /></ProtectedRoute>} />
                 <Route path="activity" element={<ProtectedRoute module="activity"><ActivityLog /></ProtectedRoute>} />
