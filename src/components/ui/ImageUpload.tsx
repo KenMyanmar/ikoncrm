@@ -12,6 +12,10 @@ interface ImageUploadProps {
   maxSizeMB?: number;
   aspectHint?: string;
   className?: string;
+  /** When provided, file is uploaded as `<fileName>.<ext>` (flat path, no folder). */
+  fileName?: string;
+  /** Overwrite existing object at the same key. */
+  upsert?: boolean;
 }
 
 export function ImageUpload({
@@ -22,6 +26,8 @@ export function ImageUpload({
   maxSizeMB = 5,
   aspectHint,
   className = "",
+  fileName,
+  upsert = false,
 }: ImageUploadProps) {
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
@@ -40,15 +46,20 @@ export function ImageUpload({
 
     setUploading(true);
     const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
-    const timestamp = Date.now();
-    const random = Math.random().toString(36).slice(2, 8);
-    const path = folder
-      ? `${folder}/${timestamp}_${random}.${ext}`
-      : `${timestamp}_${random}.${ext}`;
+    let path: string;
+    if (fileName) {
+      path = `${fileName}.${ext}`;
+    } else {
+      const timestamp = Date.now();
+      const random = Math.random().toString(36).slice(2, 8);
+      path = folder
+        ? `${folder}/${timestamp}_${random}.${ext}`
+        : `${timestamp}_${random}.${ext}`;
+    }
 
     const { data, error } = await supabase.storage
       .from(bucket)
-      .upload(path, file, { cacheControl: "3600", upsert: false });
+      .upload(path, file, { cacheControl: "3600", upsert });
 
     if (error) {
       toast.error("Upload failed: " + error.message);
@@ -56,14 +67,16 @@ export function ImageUpload({
       return;
     }
 
-    const { data: { publicUrl } } = supabase.storage
+    let { data: { publicUrl } } = supabase.storage
       .from(bucket)
       .getPublicUrl(data.path);
+
+    if (upsert) publicUrl = `${publicUrl}?t=${Date.now()}`;
 
     onChange(publicUrl);
     setUploading(false);
     toast.success("Image uploaded!");
-  }, [bucket, folder, maxSizeMB, onChange]);
+  }, [bucket, folder, maxSizeMB, onChange, fileName, upsert]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
