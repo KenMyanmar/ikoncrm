@@ -2772,6 +2772,57 @@ export type Database = {
           },
         ]
       }
+      services: {
+        Row: {
+          created_at: string
+          cta_label: string
+          cta_query: string | null
+          icon: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean
+          is_featured: boolean
+          long_description: string | null
+          short_description: string | null
+          slug: string
+          sort_order: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          cta_label?: string
+          cta_query?: string | null
+          icon?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          is_featured?: boolean
+          long_description?: string | null
+          short_description?: string | null
+          slug: string
+          sort_order?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          cta_label?: string
+          cta_query?: string | null
+          icon?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          is_featured?: boolean
+          long_description?: string | null
+          short_description?: string | null
+          slug?: string
+          sort_order?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       sla_rules: {
         Row: {
           created_at: string | null
