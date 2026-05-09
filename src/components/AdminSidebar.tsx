@@ -4,6 +4,7 @@ import {
   Users, Image, UserCog, BarChart3, Activity, Settings, LogOut, Truck,
   Percent, Zap, Ticket, MessageSquare, Shield, ClipboardList, Heart,
   Newspaper, Mail, LayoutGrid,
+  Briefcase,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useStaff, hasPermission } from "@/contexts/StaffContext";
@@ -59,6 +60,7 @@ const navGroups = [
     label: "Content",
     items: [
       { title: "Articles", url: "/articles", icon: Newspaper, module: "banners" },
+      { title: "Services", url: "/services", icon: Briefcase, module: "banners" },
     ],
   },
   {
