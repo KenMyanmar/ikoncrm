@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { ImageUpload } from "@/components/ui/ImageUpload";
 import { toast } from "sonner";
 import { Plus, Edit } from "lucide-react";
 
@@ -30,20 +31,34 @@ export default function BrandList() {
 
   const saveMutation = useMutation({
     mutationFn: async (brand: any) => {
+      const oldLogoUrl = brand._oldLogoUrl as string | undefined;
       if (brand.id) {
         const { error } = await supabase.from("brands").update({
-          name: brand.name, slug: brand.slug, description: brand.description,
+          name: brand.name, slug: brand.slug, description: brand.description, logo_url: brand.logo_url || null,
           is_active: brand.is_active, is_featured: brand.is_featured, country: brand.country, website: brand.website,
         }).eq("id", brand.id);
         if (error) throw error;
         if (staff) await logActivity(staff.id, "updated", "brand", brand.id, brand.name);
       } else {
         const { error } = await supabase.from("brands").insert({
-          name: brand.name, slug: brand.slug, description: brand.description,
+          name: brand.name, slug: brand.slug, description: brand.description, logo_url: brand.logo_url || null,
           is_active: brand.is_active, is_featured: brand.is_featured, country: brand.country, website: brand.website,
         });
         if (error) throw error;
         if (staff) await logActivity(staff.id, "created", "brand", undefined, brand.name);
+      }
+      // Cleanup old logo if replaced with a different path
+      if (oldLogoUrl && brand.logo_url && oldLogoUrl !== brand.logo_url) {
+        const marker = "/brand-logos/";
+        const oldIdx = oldLogoUrl.indexOf(marker);
+        const newIdx = brand.logo_url.indexOf(marker);
+        if (oldIdx >= 0 && newIdx >= 0) {
+          const oldPath = oldLogoUrl.slice(oldIdx + marker.length);
+          const newPath = brand.logo_url.slice(newIdx + marker.length);
+          if (oldPath && oldPath !== newPath) {
+            await supabase.storage.from("brand-logos").remove([oldPath]);
+          }
+        }
       }
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["admin-brands"] }); setOpen(false); toast.success("Brand saved"); },
@@ -51,7 +66,11 @@ export default function BrandList() {
   });
 
   const openEdit = (b?: any) => {
-    setEditing(b || { name: "", slug: "", description: "", is_active: true, is_featured: false, country: "", website: "" });
+    setEditing(
+      b
+        ? { ...b, _oldLogoUrl: b.logo_url || "" }
+        : { name: "", slug: "", description: "", logo_url: "", is_active: true, is_featured: false, country: "", website: "", _oldLogoUrl: "" }
+    );
     setOpen(true);
   };
 
@@ -96,6 +115,20 @@ export default function BrandList() {
             <div className="space-y-4">
               <div><Label>Name</Label><Input value={editing.name} onChange={e => setEditing({ ...editing, name: e.target.value })} /></div>
               <div><Label>Slug</Label><Input value={editing.slug} onChange={e => setEditing({ ...editing, slug: e.target.value })} /></div>
+              <div className="space-y-2">
+                <Label>Logo image</Label>
+                <ImageUpload
+                  bucket="brand-logos"
+                  value={editing.logo_url || ""}
+                  onChange={(url) => setEditing({ ...editing, logo_url: url })}
+                  folder={editing.slug || undefined}
+                  maxSizeMB={5}
+                  aspectHint="transparent PNG/SVG, ~400×200, brand mark not lockup"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Public on the storefront. Use a transparent background where possible — the storefront renders logos against light surfaces.
+                </p>
+              </div>
               <div><Label>Description</Label><Textarea value={editing.description || ""} onChange={e => setEditing({ ...editing, description: e.target.value })} /></div>
               <div><Label>Country</Label><Input value={editing.country || ""} onChange={e => setEditing({ ...editing, country: e.target.value })} /></div>
               <div><Label>Website</Label><Input value={editing.website || ""} onChange={e => setEditing({ ...editing, website: e.target.value })} /></div>
