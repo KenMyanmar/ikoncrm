@@ -12,12 +12,14 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 import { toast } from "sonner";
-import { ArrowLeft, CalendarIcon, Send, Save, ShoppingCart, UserPlus, ExternalLink } from "lucide-react";
+import { ArrowLeft, CalendarIcon, Send, Save, ShoppingCart, UserPlus, ExternalLink, Package } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { format, addDays } from "date-fns";
 import { cn } from "@/lib/utils";
+import { useQuoteItemDetails } from "@/hooks/useQuoteItemDetails";
 
 const STATUS_COLORS: Record<string, string> = {
   pending: "bg-muted text-muted-foreground",
@@ -224,11 +226,13 @@ export default function QuoteDetail() {
     saveMutation.mutate({ send }, { onSettled: () => setIsSubmitting(false) });
   };
 
+  const items = Array.isArray(quote?.items) ? (quote!.items as any[]) : [];
+  const { productMap, brandMap } = useQuoteItemDetails(items);
+
   if (isLoading || !quote) {
     return <div className="flex items-center justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>;
   }
 
-  const items = Array.isArray(quote.items) ? quote.items : [];
   const customerName = quote.company_name || (quote as any).customers?.company_name || (quote as any).customers?.name || "—";
   const contactEmail = quote.contact_email || (quote as any).customers?.email;
   const contactPhone = quote.contact_phone || (quote as any).customers?.phone;
@@ -285,15 +289,101 @@ export default function QuoteDetail() {
               {items.length === 0 ? (
                 <p className="text-sm text-muted-foreground">No items requested</p>
               ) : (
-                <div className="space-y-2">
-                  {items.map((item: any, i: number) => (
-                    <div key={i} className="border rounded-lg p-3 text-sm">
-                      <p className="font-medium">{item.description || item.product_name || `Item ${i + 1}`}</p>
-                      <p className="text-muted-foreground">Qty: {item.quantity || item.qty || "—"}</p>
-                      {item.notes && <p className="text-muted-foreground mt-1 text-xs">{item.notes}</p>}
-                    </div>
-                  ))}
-                </div>
+                <>
+                  {/* Desktop table */}
+                  <div className="hidden md:block overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-[64px]">Image</TableHead>
+                          <TableHead>SKU</TableHead>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Brand</TableHead>
+                          <TableHead className="text-right">Qty</TableHead>
+                          <TableHead className="text-right" title="Live catalog price — reference only, not the quoted price">Current Unit Price</TableHead>
+                          <TableHead>Customer Notes</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {items.map((item: any, i: number) => {
+                          const pid: string | null = item.product_id || null;
+                          const p = pid ? productMap.get(pid) : null;
+                          const brandName = p?.brand_id ? brandMap.get(p.brand_id) : null;
+                          const stale = !!pid && !p;
+                          const displayName = item.name || item.description || item.product_name || `Item ${i + 1}`;
+                          const qty = item.quantity ?? item.qty ?? "—";
+                          return (
+                            <TableRow key={i}>
+                              <TableCell>
+                                <div className="h-10 w-10 rounded bg-muted flex items-center justify-center overflow-hidden">
+                                  {p?.thumbnail_url ? (
+                                    <img src={p.thumbnail_url} alt={displayName} className="h-full w-full object-cover" loading="lazy" />
+                                  ) : (
+                                    <Package className="h-4 w-4 text-muted-foreground" />
+                                  )}
+                                </div>
+                              </TableCell>
+                              <TableCell className="font-mono text-xs">{p?.stock_code ?? "—"}</TableCell>
+                              <TableCell>
+                                <div className="font-medium text-sm">{displayName}</div>
+                                {stale && (
+                                  <div className="text-xs italic text-muted-foreground">Product no longer in catalog</div>
+                                )}
+                                {p && !p.is_active && (
+                                  <Badge variant="secondary" className="mt-1 text-[10px]">Inactive in catalog</Badge>
+                                )}
+                              </TableCell>
+                              <TableCell className="text-sm">{brandName ?? "—"}</TableCell>
+                              <TableCell className="text-right text-sm">{qty}</TableCell>
+                              <TableCell className="text-right text-sm">
+                                {p?.selling_price != null ? `MMK ${Number(p.selling_price).toLocaleString()}` : "—"}
+                              </TableCell>
+                              <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate">
+                                {item.notes?.trim() || "—"}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  {/* Mobile cards */}
+                  <div className="md:hidden space-y-2">
+                    {items.map((item: any, i: number) => {
+                      const pid: string | null = item.product_id || null;
+                      const p = pid ? productMap.get(pid) : null;
+                      const brandName = p?.brand_id ? brandMap.get(p.brand_id) : null;
+                      const stale = !!pid && !p;
+                      const displayName = item.name || item.description || item.product_name || `Item ${i + 1}`;
+                      const qty = item.quantity ?? item.qty ?? "—";
+                      return (
+                        <div key={i} className="border rounded-lg p-3 text-sm flex gap-3">
+                          <div className="h-12 w-12 shrink-0 rounded bg-muted flex items-center justify-center overflow-hidden">
+                            {p?.thumbnail_url ? (
+                              <img src={p.thumbnail_url} alt={displayName} className="h-full w-full object-cover" loading="lazy" />
+                            ) : (
+                              <Package className="h-4 w-4 text-muted-foreground" />
+                            )}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="font-medium truncate">{displayName}</p>
+                            <p className="text-xs text-muted-foreground">
+                              <span className="font-mono">{p?.stock_code ?? "—"}</span>
+                              <span> · {brandName ?? "—"}</span>
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Qty {qty} · {p?.selling_price != null ? `MMK ${Number(p.selling_price).toLocaleString()}` : "—"}
+                            </p>
+                            {stale && <p className="text-xs italic text-muted-foreground">Product no longer in catalog</p>}
+                            {p && !p.is_active && <Badge variant="secondary" className="mt-1 text-[10px]">Inactive in catalog</Badge>}
+                            {item.notes?.trim() && <p className="text-xs text-muted-foreground mt-1">{item.notes}</p>}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
               )}
             </CardContent>
           </Card>
@@ -309,12 +399,45 @@ export default function QuoteDetail() {
                   <div className="space-y-4">
                     {responseItems.map((r, i) => (
                       <div key={i} className="border rounded-lg p-4 space-y-3">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <p className="font-medium text-sm">{r.product_name}</p>
-                            <p className="text-xs text-muted-foreground">Qty requested: {r.qty_requested}</p>
-                          </div>
-                        </div>
+                        {(() => {
+                          const p = r.product_id ? productMap.get(r.product_id) : null;
+                          const brandName = p?.brand_id ? brandMap.get(p.brand_id) : null;
+                          return (
+                            <div className="flex gap-3 items-start">
+                              <div className="h-10 w-10 shrink-0 rounded bg-muted flex items-center justify-center overflow-hidden">
+                                {p?.thumbnail_url ? (
+                                  <img src={p.thumbnail_url} alt={r.product_name} className="h-full w-full object-cover" loading="lazy" />
+                                ) : (
+                                  <Package className="h-4 w-4 text-muted-foreground" />
+                                )}
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="font-medium text-sm truncate">{r.product_name}</p>
+                                <p className="text-xs text-muted-foreground flex flex-wrap items-center gap-x-1">
+                                  <span className="font-mono">SKU {p?.stock_code ?? "—"}</span>
+                                  <span>·</span>
+                                  <span>{brandName ?? "—"}</span>
+                                  <span>·</span>
+                                  <span>Qty req: {r.qty_requested}</span>
+                                  <span>·</span>
+                                  <span>Reference:</span>
+                                  {p?.selling_price != null ? (
+                                    <button
+                                      type="button"
+                                      className="text-primary underline-offset-2 hover:underline"
+                                      title="Click to copy reference price into Quoted Price"
+                                      onClick={() => updateItem(i, "quoted_price", Number(p.selling_price))}
+                                    >
+                                      MMK {Number(p.selling_price).toLocaleString()}
+                                    </button>
+                                  ) : (
+                                    <span>—</span>
+                                  )}
+                                </p>
+                              </div>
+                            </div>
+                          );
+                        })()}
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                           <div>
                             <Label className="text-xs">Quoted Price (MMK)</Label>
