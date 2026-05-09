@@ -109,7 +109,7 @@ export default function BrandList() {
         </CardContent>
       </Card>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>{editing?.id ? "Edit" : "New"} Brand</DialogTitle></DialogHeader>
           {editing && (
             <div className="space-y-4">
@@ -121,12 +121,13 @@ export default function BrandList() {
                   bucket="brand-logos"
                   value={editing.logo_url || ""}
                   onChange={(url) => setEditing({ ...editing, logo_url: url })}
-                  folder={editing.slug || undefined}
+                  fileName={editing.slug || undefined}
+                  upsert
                   maxSizeMB={5}
                   aspectHint="transparent PNG/SVG, ~400×200, brand mark not lockup"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Public on the storefront. Use a transparent background where possible — the storefront renders logos against light surfaces.
+                  Public on the storefront. Stored as <code>brand-logos/{editing.slug || "<slug>"}.&lt;ext&gt;</code> — re-uploading overwrites the existing file. Set the slug before uploading. Use a transparent background where possible.
                 </p>
               </div>
               <div><Label>Description</Label><Textarea value={editing.description || ""} onChange={e => setEditing({ ...editing, description: e.target.value })} /></div>
