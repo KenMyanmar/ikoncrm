@@ -226,12 +226,13 @@ export default function QuoteDetail() {
     saveMutation.mutate({ send }, { onSettled: () => setIsSubmitting(false) });
   };
 
+  const items = Array.isArray(quote?.items) ? (quote!.items as any[]) : [];
+  const { productMap, brandMap } = useQuoteItemDetails(items);
+
   if (isLoading || !quote) {
     return <div className="flex items-center justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>;
   }
 
-  const items = Array.isArray(quote.items) ? quote.items : [];
-  const { productMap, brandMap } = useQuoteItemDetails(items as any[]);
   const customerName = quote.company_name || (quote as any).customers?.company_name || (quote as any).customers?.name || "—";
   const contactEmail = quote.contact_email || (quote as any).customers?.email;
   const contactPhone = quote.contact_phone || (quote as any).customers?.phone;
