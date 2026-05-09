@@ -42,6 +42,7 @@ import ArticleEditor from "@/pages/ArticleEditor";
 import ContactInquiries from "@/pages/ContactInquiries";
 import HomepageSections from "@/pages/HomepageSections";
 import ServicesManagement from "@/pages/ServicesManagement";
+import ClientLogos from "@/pages/ClientLogos";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -93,6 +94,7 @@ const App = () => (
                 <Route path="articles/new" element={<ProtectedRoute module="banners"><ArticleEditor /></ProtectedRoute>} />
                 <Route path="articles/:id" element={<ProtectedRoute module="banners"><ArticleEditor /></ProtectedRoute>} />
                 <Route path="services" element={<ProtectedRoute module="banners"><ServicesManagement /></ProtectedRoute>} />
+                <Route path="client-logos" element={<ProtectedRoute module="banners"><ClientLogos /></ProtectedRoute>} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
