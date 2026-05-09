@@ -12,12 +12,14 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 import { toast } from "sonner";
-import { ArrowLeft, CalendarIcon, Send, Save, ShoppingCart, UserPlus, ExternalLink } from "lucide-react";
+import { ArrowLeft, CalendarIcon, Send, Save, ShoppingCart, UserPlus, ExternalLink, Package } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { format, addDays } from "date-fns";
 import { cn } from "@/lib/utils";
+import { useQuoteItemDetails } from "@/hooks/useQuoteItemDetails";
 
 const STATUS_COLORS: Record<string, string> = {
   pending: "bg-muted text-muted-foreground",
@@ -229,6 +231,7 @@ export default function QuoteDetail() {
   }
 
   const items = Array.isArray(quote.items) ? quote.items : [];
+  const { productMap, brandMap } = useQuoteItemDetails(items as any[]);
   const customerName = quote.company_name || (quote as any).customers?.company_name || (quote as any).customers?.name || "—";
   const contactEmail = quote.contact_email || (quote as any).customers?.email;
   const contactPhone = quote.contact_phone || (quote as any).customers?.phone;
