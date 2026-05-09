@@ -532,6 +532,7 @@ export type Database = {
           created_at: string | null
           id: string
           is_active: boolean | null
+          is_featured: boolean
           logo_url: string
           name: string
           sort_order: number | null
@@ -542,6 +543,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_active?: boolean | null
+          is_featured?: boolean
           logo_url: string
           name: string
           sort_order?: number | null
@@ -552,6 +554,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_active?: boolean | null
+          is_featured?: boolean
           logo_url?: string
           name?: string
           sort_order?: number | null
