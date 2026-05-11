@@ -1,71 +1,43 @@
-## Goal
+# Manual Order — Effective Price Display
 
-Enrich the CRM Quote Detail page so each requested item displays SKU, image, brand, and current reference price by joining `items[].product_id` to the `products` table at display time. No DB or JSONB shape changes.
+The Manual Order page already exists at `src/pages/CreateOrder.tsx` (route `/orders/create`). It currently pre-fills `Unit Price` with `products.selling_price`, which mismatches the price the RPC actually records when a flash deal or promotion is active (Migration 27).
+
+## Changes
+
+### 1. New hook: `src/hooks/useEffectivePrice.ts`
+
+Exports `getEffectivePrice(productId, categoryId, sellingPrice)` — single function (not a hook), reusable from QuoteDetail later. Implementation matches the spec:
+
+1. Query `flash_deals` for an active row for `product_id` (active, within `start_time`/`end_time`, ordered by soonest end). If found and stock available (`stock_limit IS NULL OR sold_count < stock_limit`), return `{ price: flash_price, source: "flash_deal" }`.
+2. Else query `promotions` filtered by active dates and `applies_to` matching `all` / this product / this category, ordered by `priority DESC`. Apply `percentage` or `fixed_amount` against `sellingPrice`. Return `{ price, source: "promotion" }`.
+3. Else return `{ price: sellingPrice, source: "catalog" }`.
+
+Single round-trip per call. Called only on add-to-line, never in the search dropdown.
+
+### 2. Update `src/pages/CreateOrder.tsx`
+
+- Extend `OrderItem` with `price_source: "flash_deal" | "promotion" | "catalog"`.
+- Extend product search query select to also fetch `category_id` so we can pass it to `getEffectivePrice`.
+- Make `addProduct` async: call `getEffectivePrice(product.id, product.category_id, product.selling_price)`, then push the line with `unit_price = result.price` and `price_source = result.source`. Existing duplicate handling (`+1 qty`) stays untouched and keeps the original price snapshot.
+- In `updateItemPrice`, when staff edits the input, set `unit_price_override` (already exists) — derived badge becomes "Manual override".
+- Render a small badge to the right of the Unit Price input:
+  - `unit_price_override != null` → muted badge "✎ Manual override"
+  - `price_source === "flash_deal"` → destructive badge "⚡ Flash deal"
+  - `price_source === "promotion"` → secondary/accent badge "Promotion"
+  - `catalog` → no badge
+- Wrap the Unit Price cell in a flex column so the badge sits under the input on narrow widths.
+
+No change to `createOrderMutation` — it already passes `unit_price_override` through to the RPC, and the RPC re-applies the discount server-side, keeping recorded price consistent with what's displayed.
+
+## Out of scope
+
+- No DB / migration changes.
+- No change to `create_manual_order` RPC.
+- No change to product search dropdown queries (avoids N+1).
+- No live re-fetch if the deal expires while composing — snapshot at add-time.
+- No countdown timer.
 
 ## Files
 
-- **New:** `src/hooks/useQuoteItemDetails.ts` — batch-fetch products + brands for an item list, return lookup Maps.
-- **Modify:** `src/pages/QuoteDetail.tsx` — rewrite the "Requested Items" section as a real table with enriched columns, and enhance each Response Builder row with the same product context.
-
-## Part A — `useQuoteItemDetails` hook
-
-Per the spec:
-- Dedupe `product_id`s via `Set`, run a single `products.select(id, stock_code, description, selling_price, currency, thumbnail_url, brand_id, is_active).in('id', ids)` query.
-- From returned products, dedupe `brand_id`s and run a single `brands.select(id, name).in('id', ids)` query.
-- React Query keys use sorted id list so identical id sets share cache across quotes; `staleTime` 60s for products, 5min for brands.
-- Return `{ productMap, brandMap, isLoading, isError }`.
-
-## Part B — Requested Items table (desktop)
-
-Replace the current bordered-card list with a `<Table>` having columns:
-
-`Image | SKU | Name | Brand | Requested Qty | Current Unit Price | Customer Notes`
-
-- Image cell: 40×40 thumbnail in `rounded bg-muted`; fallback `Package` lucide icon when null/missing product.
-- Name cell: shows `item.name`. If `product_id` set but no product row found → italic muted "Product no longer in catalog". If product exists and `is_active === false` → small `Badge` "Inactive in catalog".
-- Brand: from `brandMap`, else "—".
-- Current Unit Price: `MMK {selling_price.toLocaleString()}` or "—". Header tooltip/helper text clarifies "Reference only — not the quoted price".
-- Notes: `item.notes?.trim() || "—"`.
-
-### Mobile (< md)
-
-Render as stacked cards: thumbnail + name on top row, then SKU · Brand line, qty + reference price line, notes line. Hide the table at `md:` and below.
-
-## Part C — Response Builder enrichment
-
-For each row in `responseItems` (which is keyed by index against `quote.items`), look up the same product:
-- Header strip above the existing inputs:
-  ```
-  [thumb 32px] BATH TOWEL (DARK BLUE)
-                SKU 118ABL020001 · Brand X · Reference: [MMK 44,280]
-  ```
-- "Reference: MMK 44,280" rendered as a `<button type="button" variant="link" size="sm">` that on click sets `quoted_price` for that row to `selling_price`. Tooltip: "Click to copy reference price into Quoted Price".
-- No auto-fill on load. Existing draft values are preserved as today.
-- If no product / no `selling_price`, omit the reference button (show plain "Reference: —").
-
-Hook is called once at page level: `const { productMap, brandMap } = useQuoteItemDetails(quote?.items as any[] | undefined);` — both the items table and the response builder consume the same maps (no duplicate fetch).
-
-## Edge cases (all handled, no crashes)
-
-| Case | Behavior |
-|------|----------|
-| `product_id` null | Name + qty only; SKU/Brand/Image/Price = "—" or placeholder icon |
-| Product hard-deleted | Cached `items[].name` + italic "Product no longer in catalog" |
-| Product soft-deleted | Renders normally + "Inactive in catalog" badge |
-| Duplicate product_ids across rows | Both rows render; one DB fetch (Set dedupe) |
-| Empty/null items | Existing "No items requested" empty state preserved |
-| `selling_price` null | "—" in price column; reference button hidden in builder |
-| `thumbnail_url` null | Package icon in `bg-muted` square |
-| Brand deleted | Brand column "—" |
-
-## Out of scope (explicitly not touched)
-
-- `items` JSONB schema / E-Mall write path
-- DB migrations
-- `create_manual_order` convert flow
-- Auto-population of `response_items[i].unit_price` (click-to-copy only)
-- `QuoteList.tsx`
-
-## Acceptance verification
-
-After implementation, mentally walk the BATH TOWEL example: row should show thumbnail, `118ABL020001`, "BATH TOWEL (DARK BLUE)", brand name, qty 1, `MMK 44,280`, "—" notes. Network tab should show exactly one `products?id=in.(...)` and one `brands?id=in.(...)` request per page load.
+- New: `src/hooks/useEffectivePrice.ts`
+- Edit: `src/pages/CreateOrder.tsx`

@@ -14,7 +14,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { ArrowLeft, Plus, Search, X, User, MapPin } from "lucide-react";
+import { ArrowLeft, Plus, Search, X, User, MapPin, Zap, Pencil } from "lucide-react";
+import { getEffectivePrice, type PriceSource } from "@/hooks/useEffectivePrice";
 
 interface OrderItem {
   product_id: string;
@@ -23,6 +24,7 @@ interface OrderItem {
   quantity: number;
   unit_price: number;
   unit_price_override?: number;
+  price_source: PriceSource;
 }
 
 export default function CreateOrder() {
@@ -73,7 +75,7 @@ export default function CreateOrder() {
     queryFn: async () => {
       if (productSearch.length < 2) return [];
       const { data } = await supabase.from("products")
-        .select("id, description, stock_code, selling_price, thumbnail_url")
+        .select("id, description, stock_code, selling_price, thumbnail_url, category_id")
         .or(`description.ilike.%${productSearch}%,stock_code.ilike.%${productSearch}%`)
         .eq("is_active", true)
         .limit(10);
@@ -110,16 +112,24 @@ export default function CreateOrder() {
   const subtotal = useMemo(() => items.reduce((sum, i) => sum + (i.unit_price_override ?? i.unit_price) * i.quantity, 0), [items]);
   const total = useMemo(() => Math.max(0, subtotal + deliveryFee - discount), [subtotal, deliveryFee, discount]);
 
-  const addProduct = useCallback((product: any) => {
+  const addProduct = useCallback(async (product: any) => {
     if (items.find(i => i.product_id === product.id)) {
       setItems(prev => prev.map(i => i.product_id === product.id ? { ...i, quantity: i.quantity + 1 } : i));
     } else {
+      const sellingPrice = Number(product.selling_price || 0);
+      let effective = { price: sellingPrice, source: "catalog" as PriceSource };
+      try {
+        effective = await getEffectivePrice(product.id, product.category_id ?? null, sellingPrice);
+      } catch (e) {
+        // fall back to catalog price silently
+      }
       setItems(prev => [...prev, {
         product_id: product.id,
         product_name: product.description,
         sku: product.stock_code,
         quantity: 1,
-        unit_price: Number(product.selling_price || 0),
+        unit_price: effective.price,
+        price_source: effective.source,
       }]);
     }
     setProductSearch("");
@@ -299,12 +309,27 @@ export default function CreateOrder() {
                           />
                         </TableCell>
                         <TableCell>
-                          <Input
-                            type="number"
-                            value={item.unit_price_override ?? item.unit_price}
-                            onChange={(e) => updateItemPrice(item.product_id, parseFloat(e.target.value) || 0)}
-                            className="h-8 w-28"
-                          />
+                          <div className="flex flex-col gap-1">
+                            <Input
+                              type="number"
+                              value={item.unit_price_override ?? item.unit_price}
+                              onChange={(e) => updateItemPrice(item.product_id, parseFloat(e.target.value) || 0)}
+                              className="h-8 w-28"
+                            />
+                            {item.unit_price_override != null ? (
+                              <Badge variant="secondary" className="gap-1 text-[10px] py-0 px-1.5 w-fit">
+                                <Pencil className="h-2.5 w-2.5" /> Manual override
+                              </Badge>
+                            ) : item.price_source === "flash_deal" ? (
+                              <Badge variant="destructive" className="gap-1 text-[10px] py-0 px-1.5 w-fit">
+                                <Zap className="h-2.5 w-2.5" /> Flash deal
+                              </Badge>
+                            ) : item.price_source === "promotion" ? (
+                              <Badge className="gap-1 text-[10px] py-0 px-1.5 w-fit bg-accent text-accent-foreground hover:bg-accent/80">
+                                Promotion
+                              </Badge>
+                            ) : null}
+                          </div>
                         </TableCell>
                         <TableCell className="text-right font-medium text-sm">
                           {((item.unit_price_override ?? item.unit_price) * item.quantity).toLocaleString()} MMK
