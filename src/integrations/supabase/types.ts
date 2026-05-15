@@ -331,6 +331,51 @@ export type Database = {
         }
         Relationships: []
       }
+      business_type_subcategories: {
+        Row: {
+          business_type_id: string
+          category_id: string
+          created_at: string
+          id: string
+          is_active: boolean
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          business_type_id: string
+          category_id: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          business_type_id?: string
+          category_id?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_type_subcategories_business_type_id_fkey"
+            columns: ["business_type_id"]
+            isOneToOne: false
+            referencedRelation: "business_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_type_subcategories_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       business_types: {
         Row: {
           created_at: string
