@@ -43,6 +43,8 @@ import ContactInquiries from "@/pages/ContactInquiries";
 import HomepageSections from "@/pages/HomepageSections";
 import ServicesManagement from "@/pages/ServicesManagement";
 import ClientLogos from "@/pages/ClientLogos";
+import BusinessTypeList from "@/pages/business-types/BusinessTypeList";
+import BusinessTypeEdit from "@/pages/business-types/BusinessTypeEdit";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -95,6 +97,9 @@ const App = () => (
                 <Route path="articles/:id" element={<ProtectedRoute module="banners"><ArticleEditor /></ProtectedRoute>} />
                 <Route path="services" element={<ProtectedRoute module="banners"><ServicesManagement /></ProtectedRoute>} />
                 <Route path="client-logos" element={<ProtectedRoute module="banners"><ClientLogos /></ProtectedRoute>} />
+                <Route path="business-types" element={<ProtectedRoute module="banners"><BusinessTypeList /></ProtectedRoute>} />
+                <Route path="business-types/new" element={<ProtectedRoute module="banners"><BusinessTypeEdit /></ProtectedRoute>} />
+                <Route path="business-types/:id" element={<ProtectedRoute module="banners"><BusinessTypeEdit /></ProtectedRoute>} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
