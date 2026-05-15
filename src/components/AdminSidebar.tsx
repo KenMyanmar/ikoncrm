@@ -60,6 +60,7 @@ const navGroups = [
     label: "Content",
     items: [
       { title: "Articles", url: "/articles", icon: Newspaper, module: "banners" },
+      { title: "Business Types", url: "/business-types", icon: Briefcase, module: "banners" },
       { title: "Services", url: "/services", icon: Briefcase, module: "banners" },
       { title: "Client Logos", url: "/client-logos", icon: Building2, module: "banners" },
     ],
