@@ -131,7 +131,7 @@ export function useSaveMappings(businessTypeId: string | undefined) {
       if (toUpsert.length > 0) {
         const { error } = await supabase
           .from("business_type_subcategories")
-          .upsert(toUpsert, { onConflict: "id" });
+          .upsert(toUpsert as any, { onConflict: "id" });
         if (error) throw error;
       }
     },
