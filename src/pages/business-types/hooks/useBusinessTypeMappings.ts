@@ -118,13 +118,16 @@ export function useSaveMappings(businessTypeId: string | undefined) {
       // 2. Upsert everything still alive
       const toUpsert = working
         .filter((m) => !m._deleted)
-        .map((m) => ({
-          ...(m.id ? { id: m.id } : {}),
-          business_type_id: businessTypeId,
-          category_id: m.category_id,
-          sort_order: m.sort_order,
-          is_active: m.is_active,
-        }));
+        .map((m) => {
+          const row: Record<string, any> = {
+            business_type_id: businessTypeId,
+            category_id: m.category_id,
+            sort_order: m.sort_order,
+            is_active: m.is_active,
+          };
+          if (m.id) row.id = m.id;
+          return row;
+        });
       if (toUpsert.length > 0) {
         const { error } = await supabase
           .from("business_type_subcategories")
