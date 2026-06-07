@@ -253,7 +253,7 @@ export default function ArticleEditor() {
             placeholder="auto-generated-slug"
           />
         </div>
-        <p className="text-xs text-muted-foreground">ucogold.com/articles/{form.slug || "..."}</p>
+        <p className="text-xs text-muted-foreground">{BRAND.storefrontHost}/articles/{form.slug || "..."}</p>
       </div>
 
       {/* Excerpt */}

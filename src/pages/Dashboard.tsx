@@ -183,7 +183,7 @@ export default function Dashboard() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">
-            IKON Mart CRM · {new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+            {BRAND.name} CRM · {new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
           </h1>
           <p className="text-muted-foreground text-sm">
             Welcome back, {staff?.full_name}

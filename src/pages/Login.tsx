@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { toast } from "sonner";
 import { ArrowLeft, CheckCircle, Loader2, Mail } from "lucide-react";
-import ikonLogo from "@/assets/ikon-logo.png";
+import brandLogo from "@/assets/brand-logo-placeholder.svg";
+import { BRAND } from "@/config/brand";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -61,9 +62,9 @@ export default function Login() {
       <Card className="w-full max-w-md border-0 shadow-2xl">
         <CardHeader className="text-center pb-2 pt-8">
           <div className="mx-auto mb-4">
-            <img src={ikonLogo} alt="IKON Mart" className="h-16 w-auto mx-auto" />
+            <img src={brandLogo} alt={BRAND.name} className="h-16 w-auto mx-auto" />
           </div>
-          <h1 className="text-2xl font-bold text-foreground tracking-tight">IKON MART</h1>
+          <h1 className="text-2xl font-bold text-foreground tracking-tight">{BRAND.name.toUpperCase()}</h1>
           <p className="text-xs font-semibold tracking-[0.3em] text-accent uppercase">CRM Admin</p>
         </CardHeader>
         <CardContent className="px-8 pb-8 pt-4">

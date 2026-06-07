@@ -76,7 +76,7 @@ export default function ContactInquiries() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Contact Inquiries</h1>
-          <p className="text-sm text-muted-foreground">Submissions from the ikonmart.com Contact Us form</p>
+          <p className="text-sm text-muted-foreground">Submissions from the {BRAND.name} Contact Us form</p>
         </div>
         <div className="flex items-center gap-2">
           <Badge variant="secondary" className="text-xs">{data?.length ?? 0} total</Badge>

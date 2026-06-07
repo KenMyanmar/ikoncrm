@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { BRAND } from "@/config/brand";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -58,7 +59,7 @@ export function PackingSlipWindow({ orderId, onClose }: PackingSlipWindowProps) 
 
       <div className="flex justify-between items-start border-b pb-4 mb-4">
         <div>
-          <h1 className="text-xl font-bold">IKON Mart</h1>
+          <h1 className="text-xl font-bold">{BRAND.name}</h1>
           <p className="text-xs text-gray-500">Industrial & Commercial Supplies</p>
           <p className="text-xs text-gray-500">Yangon, Myanmar</p>
         </div>

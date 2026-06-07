@@ -112,7 +112,7 @@ export default function CustomerList() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `ikon_customers_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `${BRAND.name.toLowerCase().replace(/\s+/g, "_")}_customers_${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };

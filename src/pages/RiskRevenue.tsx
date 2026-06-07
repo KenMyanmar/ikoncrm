@@ -361,7 +361,7 @@ function RefundControlTab({ canApprove, canApproveHigh, staffId }: { canApprove:
         <CardContent className="space-y-3">
           <div>
             <Label className="text-xs">Search Order</Label>
-            <Input placeholder="IKON-..." value={orderSearch} onChange={e => setOrderSearch(e.target.value)} />
+            <Input placeholder="Order #..." value={orderSearch} onChange={e => setOrderSearch(e.target.value)} />
             {(searchResults || []).length > 0 && !selectedOrder && (
               <div className="border rounded mt-1 max-h-32 overflow-auto">
                 {searchResults!.map((o: any) => (
