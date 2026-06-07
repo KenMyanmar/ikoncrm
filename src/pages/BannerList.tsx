@@ -20,6 +20,7 @@ import { Plus, Edit, Eye, EyeOff, CalendarIcon, RotateCcw } from "lucide-react";
 import { ImageUpload } from "@/components/ui/ImageUpload";
 import { format, isPast, isFuture } from "date-fns";
 import { cn } from "@/lib/utils";
+import { BRAND } from "@/config/brand";
 
 /* ── Position presets ── */
 const POSITION_OPTIONS = [
@@ -39,7 +40,7 @@ const LINK_TYPES = [
   { value: "custom", label: "Custom URL" },
 ];
 
-const BASE_URL = "https://ucogold.com";
+const BASE_URL = BRAND.storefrontHost;
 
 /* ── Schedule helpers ── */
 function scheduleLabel(starts_at: string | null, ends_at: string | null) {

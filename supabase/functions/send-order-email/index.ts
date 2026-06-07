@@ -67,7 +67,7 @@ Deno.serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "IKON Mart <orders@ikonmart.com>",
+        from: `${Deno.env.get('BRAND_NAME') ?? '{BRAND_NAME}'} <${Deno.env.get('BRAND_FROM_EMAIL') ?? '{BRAND_FROM_EMAIL}'}>`,
         to: [to],
         subject: subject || "Order Update",
         text: body,

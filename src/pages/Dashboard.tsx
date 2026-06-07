@@ -13,6 +13,7 @@ import {
   ClipboardList, TrendingUp, TrendingDown, ArrowRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { BRAND } from "@/config/brand";
 
 const fmt = (n: number) => {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
@@ -183,7 +184,7 @@ export default function Dashboard() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">
-            IKON Mart CRM · {new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+            {BRAND.name} CRM · {new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
           </h1>
           <p className="text-muted-foreground text-sm">
             Welcome back, {staff?.full_name}

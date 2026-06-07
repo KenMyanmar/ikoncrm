@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ImageUpload } from "@/components/ui/ImageUpload";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
+import { BRAND } from "@/config/brand";
 
 const TAG_OPTIONS = ["kitchen", "insights", "brands", "care", "guides"];
 
@@ -253,7 +254,7 @@ export default function ArticleEditor() {
             placeholder="auto-generated-slug"
           />
         </div>
-        <p className="text-xs text-muted-foreground">ucogold.com/articles/{form.slug || "..."}</p>
+        <p className="text-xs text-muted-foreground">{BRAND.storefrontHost}/articles/{form.slug || "..."}</p>
       </div>
 
       {/* Excerpt */}

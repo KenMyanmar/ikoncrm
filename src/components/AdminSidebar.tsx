@@ -16,7 +16,8 @@ import {
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
-import ikonLogo from "@/assets/ikon-logo.png";
+import brandLogo from "@/assets/brand-logo-placeholder.svg";
+import { BRAND } from "@/config/brand";
 import { NotificationBell } from "@/components/sidebar/NotificationBell";
 
 const navGroups = [
@@ -118,9 +119,9 @@ export function AdminSidebar() {
       <SidebarContent>
         {!collapsed && (
           <div className="px-4 py-5 flex items-center gap-3">
-            <img src={ikonLogo} alt="IKON Mart" className="h-10 w-auto" />
+            <img src={brandLogo} alt={BRAND.name} className="h-10 w-auto" />
             <div>
-              <h1 className="text-lg font-bold text-sidebar-foreground tracking-tight">IKON</h1>
+              <h1 className="text-lg font-bold text-sidebar-foreground tracking-tight">{BRAND.name}</h1>
               <p className="text-[10px] font-semibold tracking-[0.25em] text-sidebar-primary uppercase">ADMIN</p>
             </div>
           </div>

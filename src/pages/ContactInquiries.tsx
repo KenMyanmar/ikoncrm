@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Search, RefreshCw, Mail, Phone, Copy } from "lucide-react";
 import { toast } from "sonner";
+import { BRAND } from "@/config/brand";
 
 type Inquiry = {
   id: string;
@@ -76,7 +77,7 @@ export default function ContactInquiries() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Contact Inquiries</h1>
-          <p className="text-sm text-muted-foreground">Submissions from the ikonmart.com Contact Us form</p>
+          <p className="text-sm text-muted-foreground">Submissions from the {BRAND.name} Contact Us form</p>
         </div>
         <div className="flex items-center gap-2">
           <Badge variant="secondary" className="text-xs">{data?.length ?? 0} total</Badge>

@@ -6,6 +6,7 @@ import { useTheme } from "next-themes";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { BRAND } from "@/config/brand";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -393,7 +394,7 @@ export default function SettingsPage() {
                   <div className="grid gap-4 sm:grid-cols-2 max-w-lg">
                     <div className="space-y-2">
                       <Label>Company Name</Label>
-                      <Input defaultValue="IKON" disabled placeholder="Coming soon" />
+                      <Input defaultValue={BRAND.name} disabled placeholder="Coming soon" />
                     </div>
                     <div className="space-y-2">
                       <Label>Default Currency</Label>
