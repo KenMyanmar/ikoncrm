@@ -2294,7 +2294,10 @@ export type Database = {
           onhand_qty: number
           other_code: string | null
           packing: string | null
+          parent_equipment_id: string | null
+          product_type: Database["public"]["Enums"]["product_type_enum"]
           reorder_qty: number
+          requires_quote: boolean
           search_vector: unknown
           selling_price: number | null
           short_description: string | null
@@ -2334,7 +2337,10 @@ export type Database = {
           onhand_qty?: number
           other_code?: string | null
           packing?: string | null
+          parent_equipment_id?: string | null
+          product_type: Database["public"]["Enums"]["product_type_enum"]
           reorder_qty?: number
+          requires_quote?: boolean
           search_vector?: unknown
           selling_price?: number | null
           short_description?: string | null
@@ -2374,7 +2380,10 @@ export type Database = {
           onhand_qty?: number
           other_code?: string | null
           packing?: string | null
+          parent_equipment_id?: string | null
+          product_type?: Database["public"]["Enums"]["product_type_enum"]
           reorder_qty?: number
+          requires_quote?: boolean
           search_vector?: unknown
           selling_price?: number | null
           short_description?: string | null
@@ -2415,6 +2424,20 @@ export type Database = {
             columns: ["group_id"]
             isOneToOne: false
             referencedRelation: "product_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_parent_equipment_id_fkey"
+            columns: ["parent_equipment_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_parent_equipment_id_fkey"
+            columns: ["parent_equipment_id"]
+            isOneToOne: false
+            referencedRelation: "products_public"
             referencedColumns: ["id"]
           },
         ]
@@ -3134,6 +3157,7 @@ export type Database = {
       }
       products_public: {
         Row: {
+          brand_country: string | null
           brand_id: string | null
           brand_logo: string | null
           brand_name: string | null
@@ -3166,7 +3190,10 @@ export type Database = {
           packing: string | null
           parent_category_name: string | null
           parent_category_slug: string | null
+          parent_equipment_id: string | null
+          product_type: Database["public"]["Enums"]["product_type_enum"] | null
           reorder_qty: number | null
+          requires_quote: boolean | null
           search_vector: unknown
           selling_price: number | null
           short_description: string | null
@@ -3206,6 +3233,20 @@ export type Database = {
             columns: ["group_id"]
             isOneToOne: false
             referencedRelation: "product_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_parent_equipment_id_fkey"
+            columns: ["parent_equipment_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_parent_equipment_id_fkey"
+            columns: ["parent_equipment_id"]
+            isOneToOne: false
+            referencedRelation: "products_public"
             referencedColumns: ["id"]
           },
         ]
@@ -3317,6 +3358,12 @@ export type Database = {
     }
     Enums: {
       article_status: "draft" | "published" | "archived"
+      product_type_enum:
+        | "equipment"
+        | "spare_part"
+        | "accessory"
+        | "consumable"
+        | "tableware_goods"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -3445,6 +3492,13 @@ export const Constants = {
   public: {
     Enums: {
       article_status: ["draft", "published", "archived"],
+      product_type_enum: [
+        "equipment",
+        "spare_part",
+        "accessory",
+        "consumable",
+        "tableware_goods",
+      ],
     },
   },
 } as const
